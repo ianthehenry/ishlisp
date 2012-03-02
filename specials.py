@@ -16,9 +16,9 @@ def car(arg, scope):
 def cdr(arg, scope):
     return eval_node(arg.car, scope).cdr
 
-def pair(arg, scope):
+def list_(arg, scope):
     if arg is nil:
         return nil
     if type(arg) is not FormNode:
         raise Exception('cannot have a cdr without a car')
-    return Pair(eval_node(arg.car, scope), eval_node(FormNode(IdentifierNode('pair'), arg.cdr) if type(arg.cdr) is FormNode else arg.cdr, scope))
+    return Pair(eval_node(arg.car, scope), list_(arg.cdr, scope) if type(arg.cdr) is FormNode else arg.cdr)

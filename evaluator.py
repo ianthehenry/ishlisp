@@ -61,7 +61,7 @@ root = Scope({
     'print': specials.print_,
     'add': specials.add,
     'id': specials.id,
-    'pair': specials.pair,
+    'list': specials.list_,
     'car': specials.car,
     'cdr': specials.cdr,
     'nil': nil

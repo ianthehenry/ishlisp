@@ -119,7 +119,7 @@ def parse_single_token(token):
 
 matched_tokens = {
     '(': (')', lambda *sexp: parse_forms(sexp), lambda: nil), # this should actually throw an exception, but i'm allowing it for now...makes sense if nil can be used as a function
-    '[': (']', lambda *sexp: FormNode(IdentifierNode('pair'), parse_forms(sexp)), lambda: nil)
+    '[': (']', lambda *sexp: FormNode(IdentifierNode('list'), parse_forms(sexp)), lambda: nil)
 }
 
 def parse(tokens): # converts token stream to s-expressions, parses numeric literals, etc

@@ -11,19 +11,19 @@ class Tests(unittest.TestCase):
     def _repr_is_homoiconic(self, code):
         self.assertEqual(code, repr(get_single_form(code)))
 
-    def test_pair_token_repr_empty_pairs_are_nil(self):
+    def test_list_token_repr_empty_lists_are_nil(self):
         self.assertEqual('nil', repr(get_single_form('[]')))
 
-    def test_pair_token_must_have_cdr(self):
+    def test_list_token_must_have_cdr(self):
         self.assertRaises(Exception, lambda: read('[1 |]'))
 
-    def test_pair_token_must_have_car(self):
+    def test_list_token_must_have_car(self):
         self.assertRaises(Exception, lambda: read('[| 1]'))
 
-    def test_pair_token_must_have_car_and_cdr(self):
+    def test_list_token_must_have_car_and_cdr(self):
         self.assertRaises(Exception, lambda: read('[|]'))
 
-    def test_pair_token_must_not_have_multiple_cdrs(self):
+    def test_list_token_must_not_have_multiple_cdrs(self):
         self.assertRaises(Exception, lambda: read('[1 | 2 3]'))
 
     def test_form_token_repr(self):
@@ -50,12 +50,12 @@ class Tests(unittest.TestCase):
         expected = Forms(IdentifierNode('a'), IdentifierNode('b'), PAIR_CDR_TOKEN, nil)
         self.assertEqual(expected, read('(a b)')[0])
 
-    def test_read_square_brackets_converts_to_pair_special_form(self):
-        expected = FormNode(IdentifierNode('pair'), Forms(IdentifierNode('a'), IdentifierNode('b')))
+    def test_read_square_brackets_converts_to_list_special_form(self):
+        expected = FormNode(IdentifierNode('list'), Forms(IdentifierNode('a'), IdentifierNode('b')))
         self.assertEqual(expected, read('[a b]')[0])
 
-    def test_read_square_brackets_with_cdr_converts_to_pair_special_form(self):
-        expected = FormNode(IdentifierNode('pair'), Forms(IdentifierNode('a'), PAIR_CDR_TOKEN, IdentifierNode('b')))
+    def test_read_square_brackets_with_cdr_converts_to_list_special_form(self):
+        expected = FormNode(IdentifierNode('list'), Forms(IdentifierNode('a'), PAIR_CDR_TOKEN, IdentifierNode('b')))
         self.assertEqual(expected, read('[a | b]')[0])
 
     def test_read(self):
@@ -72,12 +72,12 @@ class Tests(unittest.TestCase):
                     NumericLiteralNode('5'),
                     NumericLiteralNode('6'))),
             Forms(IdentifierNode('print'),
-                FormNode(IdentifierNode('pair'), Forms(
+                FormNode(IdentifierNode('list'), Forms(
                     NumericLiteralNode('7'),
                     PAIR_CDR_TOKEN,
                     NumericLiteralNode('8')))),
             Forms(IdentifierNode('print'),
-                FormNode(IdentifierNode('pair'), Forms(
+                FormNode(IdentifierNode('list'), Forms(
                     Forms(IdentifierNode('add'),
                         NumericLiteralNode('10'),
                         NumericLiteralNode('20'))))),

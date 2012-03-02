@@ -19,7 +19,7 @@ def eval_node(node, scope):
         return nil
 
     if type(node) is Pair:
-        return node
+        return Pair(eval_node(node.car, scope), eval_node(node.cdr, scope))
 
     if type(node) is FormNode:
         fn = eval_node(node.car, scope)
@@ -45,8 +45,8 @@ root = Scope({
     'nil': nil
 }, None)
 
-def isheval(code):
+def isheval(code, scope = root):
     ret_value = nil
     for node in read(code):
-        ret_value = eval_node(node, root)
+        ret_value = eval_node(node, scope)
     return ret_value

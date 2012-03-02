@@ -1,6 +1,7 @@
 import unittest
-from reader import read, parse_forms, FormNode, PAIR_CDR_TOKEN, NumericLiteralNode, IdentifierNode, nil
-from evaluator import isheval, Pair
+from reader import lex, read, parse_forms, FormNode, PAIR_CDR_TOKEN, NumericLiteralNode, IdentifierNode, nil
+from evaluator import isheval, Pair, root, Scope
+from types import LambdaType, FunctionType
 
 def read_one(code):
     return read(code)[0]
@@ -38,78 +39,102 @@ class Tests(unittest.TestCase):
         self.assertEqual(11, isheval('(add 5 6)'))
         self.assertEqual(8, isheval('(add 5 (add 1 2))'))
         self.assertEqual(18, isheval('(add (add 5 10) (add 1 2))'))
-
-    def _test_builtin_id(self):
+    def test_eval_builtin_id(self):
         self.assertEqual(2, isheval('(id | 2)'))
         self.assertEqual(5, isheval('(id | (add 2 3))'))
+        self.assertEqual(Pair(1, nil), isheval('(id | (list 1)'))
         self.assertEqual(Pair(1, nil), isheval('(id | [1]'))
         self.assertEqual(Pair(1, 2), isheval('(id | [1 | 2]'))
         self.assertEqual(Pair(1, nil), isheval('(id 1)'))
-        self.assertEqual(20, isheval('((id | id) 10)'))
-        # self.assertEqual(Pair(10, 20), isheval('[(add 5 5) | (add 10 10)]'))
-
-    def _test_eval_lists(self):
+        self.assertEqual(20, isheval('((id | id) | 20)'))
+    def test_eval_square_brackets(self):
         self.assertEqual(Pair(1, nil), isheval('[1]'))
         self.assertEqual(Pair(1, Pair(2, Pair(3, nil))), isheval('[1 2 3]'))
         self.assertEqual(Pair(1, 2), isheval('[1 | 2]'))
         self.assertEqual(Pair(1, Pair(2, 3)), isheval('[1 2 | 3]'))
         self.assertEqual(Pair(10, nil), isheval('[(add 5 5)]'))
         self.assertEqual(Pair(10, 20), isheval('[(add 5 5) | (add 10 10)]'))
-
+    def test_eval_list_special_form(self):
         self.assertEqual(Pair(7, Pair(8, Pair(9, nil))), isheval('(list 7 8 9)'))
-        self.assertEqual(Pair(4, Pair(5, Pair(6, nil))), isheval('(list | (4 5 6))'))
+        self.assertEqual(Pair(10, 20), isheval('(list 10 | 20)'))
         self.assertEqual(Pair(1, Pair(2, 3)), isheval('(list 1 2 | 3)'))
-
-        self.assertEqual(Pair(30, nil), isheval('[(add 10 20)]'))
-        self.assertEqual(Pair(30, 50), isheval('[(add 10 20) | (add 25 25)]'))
-
-    def _test_eval_fns(self):
+        self.assertEqual(Pair(10, 20), isheval('(list (add 5 5) | (add 10 10))'))
+        self.assertRaises(Exception, isheval, '(list | 1)')
+        self.assertRaises(Exception, isheval, '(list | [4 5 6])')
+    def test_eval_literals(self):
+        self.assertEqual(10, isheval('10'))
+    def test_eval_functions(self):
         self.assertEqual(20, isheval('((fn x 20))'))
         self.assertEqual(5, isheval('((fn x x) | 5)'))
         self.assertEqual(5, isheval('((fn x (car x)) | [5])'))
         self.assertEqual(5, isheval('((fn x (car x)) 5)'))
-        self.assertEqual(Pair(5, nil), isheval('((fn x x) (add 2 3)))'))
+        self.assertEqual(Pair(5, nil), isheval('((fn x x) (add 2 3))'))
         self.assertEqual(30, isheval('((fn x (add 10 (car x))) 20)'))
-
-    def _test_builtins(self):
+        self.assertRaises(Exception, isheval, '((add 1 2))')
+    def test_eval_functions_in_scope(self):
+        my_id = isheval('(fn x x)')
+        scope = Scope({'my_id': my_id}, root)
+        self.assertEqual(my_id, isheval('my_id', scope))
+        self.assertEqual(my_id, isheval('(my_id | (my_id | my_id))', scope))
+        self.assertEqual(3, isheval('(my_id | 3)', scope))
+        self.assertEqual(Pair(my_id, nil), isheval('(my_id my_id)', scope))
+        self.assertEqual(my_id, isheval('(my_id | my_id)', scope))
+        self.assertEqual(Pair(20, nil), isheval('(my_id 20)', scope))
+    def test_eval_nested_functions(self):
+        compose = isheval('(fn x (fn y ((car (cdr x)) | ((car x) | y))))')
+        self.assertEqual(LambdaType, type(compose))
+        scope = Scope({'compose': compose}, root)
+        self.assertEqual(compose, isheval('compose', scope))
+        self.assertEqual(10, isheval('((compose id id) | 10)', scope))
+        self.assertEqual(Pair(10, nil), isheval('((compose id id) 10)', scope))
+    def test_eval_builtins(self):
         self.assertEqual(1, isheval('(car [1])'))
         self.assertEqual(nil, isheval('(cdr [1])'))
-        self.assertEqual(nil, isheval('(id | nil)'))
-        self.assertEqual(5, isheval('(id | 5)'))
-        self.assertEqual(Pair(5, nil), isheval('(id | [5])'))
-        self.assertEqual(5, isheval('(id | (add 2 3))'))
-        self.assertEqual(Pair(5, nil), isheval('(id (add 2 3))'))
+
+    # lex tests
+
+    def test_lex_bare_literals(self):
+        self.assertEqual(['a'], lex('a'))
+        self.assertEqual(['10'], lex('10'))
+
+    def test_lex_forms(self):
+        self.assertEqual(['(', 'a', ')'], lex('(a)'))
+        self.assertEqual(['(', 'a', 'b', ')'], lex('(a b)'))
+        self.assertEqual(['(', 'a', ')', 'b', ')'], lex('(a) b)'))
 
     # read tests
 
+    def test_read_bare_literals(self):
+        self.assertEqual(IdentifierNode('a'), read_one('a'))
+        self.assertEqual(NumericLiteralNode('10'), read_one('10'))
     def test_read_trivial_form(self):
         self.assertEqual(
             FormNode(IdentifierNode('a'), nil),
-            read('(a)')[0])
+            read_one('(a)'))
     def test_read_form_with_cdr(self):
         self.assertEqual(
             FormNode(IdentifierNode('a'), IdentifierNode('b')),
-            read('(a | b)')[0])
+            read_one('(a | b)'))
     def test_read_form_with_form_as_cdr(self):
         self.assertEqual(
             FormNode(IdentifierNode('a'), FormNode(IdentifierNode('b'), nil)),
-            read('(a | (b))')[0])
+            read_one('(a | (b))'))
     def test_read_form_without_cdr(self):
         self.assertEqual(
             Forms(IdentifierNode('a'), IdentifierNode('b')),
-            read('(a b)')[0])
+            read_one('(a b)'))
     def test_read_form_without_cdr_implicit_nil(self):
         self.assertEqual(
             Forms(IdentifierNode('a'), IdentifierNode('b'), PAIR_CDR_TOKEN, nil),
-            read('(a b)')[0])
+            read_one('(a b)'))
     def test_read_square_brackets_converts_to_list_special_form(self):
         self.assertEqual(
             Forms(IdentifierNode('list'), IdentifierNode('a'), IdentifierNode('b')),
-            read('[a b]')[0])
+            read_one('[a b]'))
     def test_read_square_brackets_with_cdr_converts_to_list_special_form(self):
         self.assertEqual(
             FormNode(IdentifierNode('list'), Pair(IdentifierNode('a'), IdentifierNode('b'))),
-            read('[a | b]')[0])
+            read_one('[a | b]'))
     def test_read_square_brackets_must_have_cdr(self):
         self.assertRaises(Exception, lambda: read('[a |]'))
     def test_read_square_brackets_must_have_car(self):

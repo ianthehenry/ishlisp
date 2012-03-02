@@ -87,6 +87,7 @@ def lex(code): # converts string to tokens, currently represented as simple stri
             current_token = []
         else:
             current_token += c
+    end_token(current_token)
     return tokens
 
 def read_matched_code(tokens, start, end, constructor, empty_constructor):

@@ -31,16 +31,16 @@ def tuplify(lst):
 
     return (tuplify(lst[0]), tuplify(lst[1:]))
 
-def continue_repr(tup, closing_symbol):
+def continue_repr(tup):
     assert len(tup) == 2
     car, cdr = tup
 
     if type(cdr) is tuple:
-        return "%s %s" % (repr(car), continue_repr(cdr, closing_symbol))
+        return "%s %s" % (repr(car), continue_repr(cdr))
     elif cdr is nil:
-        return "%s%s" % (repr(car), closing_symbol)
+        return "%s)" % repr(car)
     else:
-        return "%s | %s%s" % (repr(car), repr(cdr), closing_symbol)
+        return "%s | %s)" % (repr(car), repr(cdr))
 
 class Node:
     pass
@@ -51,39 +51,18 @@ class FormNode(Node):
         self.car = self.sexp[0]
         self.cdr = self.sexp[1]
     def __repr__(self):
-        # print(self)
-        # print(type(self.cdr))
         if type(self.cdr) is tuple:
-            return "(%s %s" % (repr(self.car), continue_repr(self.cdr, ')'))
-        elif type(self.cdr) is FormNode:
-            return "(%s %s" % (repr(self.car), continue_repr(self.cdr.sexp, ')'))
+            return "(%s %s" % (repr(self.car), continue_repr(self.cdr))
+        elif type(self.cdr) is FormNode: # this is potentially a little misleading, as it's not showing you the exact parse tree, but i think it's okay for now
+            return "(%s %s" % (repr(self.car), continue_repr(self.cdr.sexp))
         elif self.cdr is nil:
-            return "(%s)" % self.car
+            return "(%s)" % repr(self.car)
         else:
             return "(%s | %s)" % (repr(self.car), repr(self.cdr))
     def __len__(self):
         return len(self.sexp)
     def __eq__(self, other):
         return type(other) is FormNode and self.sexp == other.sexp
-
-class PairNode(Node):
-    def __init__(self, *sexp):
-        self.sexp = tuplify(sexp)
-        self.car = self.sexp[0]
-        self.cdr = self.sexp[1]
-    def __repr__(self):
-        if type(self.cdr) is tuple:
-            return "[%s %s" % (repr(self.car), continue_repr(self.cdr, ']'))
-        elif type(self.cdr) is PairNode:
-            return "[%s %s" % (repr(self.car), continue_repr(self.cdr.sexp, ']'))
-        elif self.cdr is nil:
-            return "[%s]" % repr(self.car)
-        else:
-            return "[%s | %s]" % (repr(self.car), repr(self.cdr))
-    def __len__(self):
-        return len(self.sexp)
-    def __eq__(self, other):
-        return type(other) is PairNode and self.sexp == other.sexp
 
 class IdentifierNode(Node):
     def __init__(self, token):
@@ -148,7 +127,7 @@ def parse_single_token(token):
 
 matched_tokens = {
     '(': (')', FormNode, lambda: nil), # this should actually throw an exception, but i'm allowing it for now...makes sense if nil can be used as a function
-    '[': (']', PairNode, lambda: nil)
+    '[': (']', lambda *sexp: FormNode(IdentifierNode('pair'), FormNode(*sexp)), lambda: nil)
 }
 
 def parse(tokens): # converts token stream to s-expressions, parses numeric literals, etc

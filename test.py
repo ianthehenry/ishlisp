@@ -1,5 +1,5 @@
 import unittest
-from reader import read, tuplify, FormNode, PairNode, PAIR_CDR_TOKEN, NumericLiteralNode, IdentifierNode
+from reader import read, tuplify, FormNode, PAIR_CDR_TOKEN, NumericLiteralNode, IdentifierNode, nil
 
 def get_single_form(code):
     return read(code)[0]
@@ -8,17 +8,8 @@ class Tests(unittest.TestCase):
     def _repr_is_homoiconic(self, code):
         self.assertEqual(code, repr(get_single_form(code)))
 
-    def test_pair_token_repr_empty_pairss_are_nil(self):
+    def test_pair_token_repr_empty_pairs_are_nil(self):
         self.assertEqual('nil', repr(get_single_form('[]')))
-
-    def test_pair_token_repr_cdr_of_pair_token_prints_as_list(self):
-        self.assertEqual('[1 2]', repr(get_single_form('[1 | [2]]')))
-
-    def test_pair_token_repr_is_homoiconic(self):
-        self._repr_is_homoiconic('[1]')
-        self._repr_is_homoiconic('[1 | 2]')
-        self._repr_is_homoiconic('[1 2 | 3]')
-        self._repr_is_homoiconic('[1 2 3]')
 
     def test_pair_token_must_have_cdr(self):
         self.assertRaises(Exception, lambda: read('[1 |]'))
@@ -44,6 +35,26 @@ class Tests(unittest.TestCase):
         self.assertRaises(Exception, lambda: read('(| 1)'))
         self.assertRaises(Exception, lambda: read('(1 | 2 3)'))
 
+    def test_read_form_with_cdr(self):
+        expected = FormNode(IdentifierNode('a'), PAIR_CDR_TOKEN, IdentifierNode('b'))
+        self.assertEqual(expected, read('(a | b)')[0])
+
+    def test_read_form_without_cdr(self):
+        expected = FormNode(IdentifierNode('a'), IdentifierNode('b'))
+        self.assertEqual(expected, read('(a b)')[0])
+
+    def test_read_form_without_cdr_implicit_nil(self):
+        expected = FormNode(IdentifierNode('a'), IdentifierNode('b'), PAIR_CDR_TOKEN, nil)
+        self.assertEqual(expected, read('(a b)')[0])
+
+    def test_read_square_brackets_converts_to_pair_special_form(self):
+        expected = FormNode(IdentifierNode('pair'), FormNode(IdentifierNode('a'), IdentifierNode('b')))
+        self.assertEqual(expected, read('[a b]')[0])
+
+    def test_read_square_brackets_with_cdr_converts_to_pair_special_form(self):
+        expected = FormNode(IdentifierNode('pair'), FormNode(IdentifierNode('a'), PAIR_CDR_TOKEN, IdentifierNode('b')))
+        self.assertEqual(expected, read('[a | b]')[0])
+
     def test_read(self):
         code = '''
         (print (add 5 6))
@@ -53,9 +64,20 @@ class Tests(unittest.TestCase):
 
         actual = read(code)
         expected = [
-            FormNode(IdentifierNode('print'), FormNode(IdentifierNode('add'), NumericLiteralNode('5'), NumericLiteralNode('6'))),
-            FormNode(IdentifierNode('print'), PairNode(NumericLiteralNode('7'), PAIR_CDR_TOKEN, NumericLiteralNode('8'))),
-            FormNode(IdentifierNode('print'), PairNode(FormNode(IdentifierNode('add'), NumericLiteralNode('10'), NumericLiteralNode('20')))),
+            FormNode(IdentifierNode('print'),
+                FormNode(IdentifierNode('add'),
+                    NumericLiteralNode('5'),
+                    NumericLiteralNode('6'))),
+            FormNode(IdentifierNode('print'),
+                FormNode(IdentifierNode('pair'), FormNode(
+                    NumericLiteralNode('7'),
+                    PAIR_CDR_TOKEN,
+                    NumericLiteralNode('8')))),
+            FormNode(IdentifierNode('print'),
+                FormNode(IdentifierNode('pair'), FormNode(
+                    FormNode(IdentifierNode('add'),
+                        NumericLiteralNode('10'),
+                        NumericLiteralNode('20'))))),
         ]
         self.assertEqual(expected, read(code))
 

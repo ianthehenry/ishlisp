@@ -1,4 +1,4 @@
-from reader import nil, read, FormNode, PairNode, IdentifierNode, NumericLiteralNode
+from reader import nil, read, FormNode, IdentifierNode, NumericLiteralNode
 # specials is imported below
 
 class Pair:
@@ -37,7 +37,7 @@ class Scope:
         return self.parent.get(identifier)
 
 def eval_node(node, scope):
-    # it might be nicer to represent PairNodes as actual pairs, not tuples, so that we don't have to do this
+    # it might be nicer to represent FormNodes as actual pairs, not tuples, so that we don't have to do this
     if node is nil:
         return nil
     elif type(node) is tuple:
@@ -51,8 +51,6 @@ def eval_node(node, scope):
         return scope.get(node.identifier)
     elif type(node) is NumericLiteralNode:
         return node.num
-    elif type(node) is PairNode:
-        return Pair(eval_node(node.car, scope), eval_node(node.cdr, scope))
     else:
         raise Exception("I don't know how to do eval %s" % repr(node))
 

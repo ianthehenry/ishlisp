@@ -6,7 +6,6 @@ class Pair:
     def __init__(self, car, cdr):
         self.car = car
         self.cdr = cdr
-
     def __repr__(self):
         if type(self.cdr) is Pair:
             return "[%s %s" % (repr(self.car), self.cdr.continue_repr())
@@ -14,7 +13,8 @@ class Pair:
             return "[%s]" % self.car
         else:
             return "[%s | %s]" % (repr(self.car), repr(self.cdr))
-
+    def __str__(self):
+        return "Pair [%s | %s]" % (str(self.car), str(self.cdr))
     def continue_repr(self):
         car, cdr = (self.car, self.cdr)
 
@@ -24,6 +24,8 @@ class Pair:
             return "%s]" % repr(car)
         else:
             return "%s | %s]" % (repr(car), repr(cdr))
+    def __eq__(self, other):
+        return type(other) is Pair and self.car == other.car and self.cdr == other.cdr
 
 class Scope:
     def __init__(self, dict, parent):
@@ -67,6 +69,7 @@ root = Scope({
 }, None)
 
 def isheval(code):
+    ret_value = nil
     for node in read(code):
-        eval_node(node, root)
-    return 'if you were expecting a return value here you should probs implement that'
+        ret_value = eval_node(node, root)
+    return ret_value

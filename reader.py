@@ -10,6 +10,9 @@ class Nil:
     def __repr__(self):
         return 'nil'
 
+    def __eq__(self, other):
+        return self is other
+
 nil = Nil()
 PAIR_CDR_TOKEN = '|'
 
@@ -54,6 +57,8 @@ class FormNode(Node):
             return "%s | %s)" % (repr(self.car), repr(self.cdr))
     def __len__(self):
         return len(self.sexp)
+    def __str__(self):
+        return "FormNode '[%s | %s]'" % (str(self.car), str(self.cdr))
     def __eq__(self, other):
         return type(other) is FormNode and self.car == other.car and self.cdr == other.cdr
 
@@ -62,6 +67,8 @@ class IdentifierNode(Node):
         self.identifier = token
     def __repr__(self):
         return self.identifier
+    def __str__(self):
+        return "IdentifierNode '%s'" % repr(self.identifier)
     def __eq__(self, other):
         return type(other) is IdentifierNode and self.identifier == other.identifier
 
@@ -70,6 +77,8 @@ class NumericLiteralNode(Node):
         self.num = int(token)
     def __repr__(self):
         return repr(self.num)
+    def __str__(self):
+        return "NumericLiteralNode '%s'" % repr(self.num)
     def __eq__(self, other):
         return type(other) is NumericLiteralNode and self.num == other.num
 

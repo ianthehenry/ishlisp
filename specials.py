@@ -9,7 +9,10 @@ def add(arg, scope):
     return eval_node(arg.car, scope) + eval_node(arg.cdr.car, scope)
 
 def id(arg, scope):
-    return eval_node(arg.car, scope)
+    print()
+    print(str(arg))
+
+    return eval_node(arg, scope)
 
 def car(arg, scope):
     return eval_node(arg.car, scope).car
@@ -33,13 +36,7 @@ def fn(arg, scope):
     def lambduh(arg, outer_scope):
         nonlocal forms
 
-        # evaluate our argument...to define a macro rather than a function, simply remove this statement. and the making-a-new-scope thing. whatever.
-        if type(arg) is FormNode:
-            arg = list_(arg, outer_scope)
-        else:
-            arg = eval_node(arg, outer_scope)
-
-        inner_scope = Scope({param_name: arg}, outer_scope)
+        inner_scope = Scope({param_name: eval_node(arg, outer_scope)}, outer_scope)
         return_value = nil
         while forms is not nil:
             return_value = eval_node(forms.car, inner_scope)

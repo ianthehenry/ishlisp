@@ -2,69 +2,53 @@ import unittest
 from reader import read, parse_forms, FormNode, PAIR_CDR_TOKEN, NumericLiteralNode, IdentifierNode, nil
 from evaluator import isheval, Pair
 
-def get_single_form(code):
+def read_one(code):
     return read(code)[0]
 
 def Forms(*nodes):
     return parse_forms(nodes)
 
+def Pairs(*nodes):
+    return parse_forms(nodes, False)
+
 class Tests(unittest.TestCase):
     def _repr_is_homoiconic(self, code):
-        self.assertEqual(code, repr(get_single_form(code)))
+        self.assertEqual(code, repr(read_one(code)))
 
-    def test_list_token_repr_empty_lists_are_nil(self):
-        self.assertEqual('nil', repr(get_single_form('[]')))
+    # repr tests
 
-    def test_list_token_must_have_cdr(self):
-        self.assertRaises(Exception, lambda: read('[1 |]'))
+    def test_list_repr_empty_lists_are_nil(self):
+        self.assertEqual('nil', repr(read_one('[]')))
+    def test_form_node_repr(self):
+        self._repr_is_homoiconic('(a)')
+        self._repr_is_homoiconic('(a | b)')
+        self._repr_is_homoiconic('(a b | 3)')
+        self._repr_is_homoiconic('(a b 3)')
+        self._repr_is_homoiconic('(a (b))')
+        self._repr_is_homoiconic('(a | (b))')
+        # self.assertRaises(Exception, read, '()') # TODO
+        self.assertRaises(Exception, read, '(|)')
+        self.assertRaises(Exception, read, '(a |)')
+        self.assertRaises(Exception, read, '(| a)')
+        self.assertRaises(Exception, read, '(a | b 3)')
 
-    def test_list_token_must_have_car(self):
-        self.assertRaises(Exception, lambda: read('[| 1]'))
-
-    def test_list_token_must_have_car_and_cdr(self):
-        self.assertRaises(Exception, lambda: read('[|]'))
-
-    def test_list_token_must_not_have_multiple_cdrs(self):
-        self.assertRaises(Exception, lambda: read('[1 | 2 3]'))
-
-    def test_form_token_repr(self):
-        self.assertEqual('nil', repr(get_single_form('()')))
-        self.assertEqual('(1 2)', repr(get_single_form('(1 | (2))')))
-        self._repr_is_homoiconic('(1)')
-        self._repr_is_homoiconic('(1 | 2)')
-        self._repr_is_homoiconic('(1 2 | 3)')
-        self._repr_is_homoiconic('(1 2 3)')
-        self.assertRaises(Exception, lambda: read('(|)'))
-        self.assertRaises(Exception, lambda: read('(1 |)'))
-        self.assertRaises(Exception, lambda: read('(| 1)'))
-        self.assertRaises(Exception, lambda: read('(1 | 2 3)'))
-
-    def test_read_form_with_cdr(self):
-        expected = Forms(IdentifierNode('a'), PAIR_CDR_TOKEN, IdentifierNode('b'))
-        self.assertEqual(expected, read('(a | b)')[0])
-
-    def test_read_form_without_cdr(self):
-        expected = Forms(IdentifierNode('a'), IdentifierNode('b'))
-        self.assertEqual(expected, read('(a b)')[0])
-
-    def test_read_form_without_cdr_implicit_nil(self):
-        expected = Forms(IdentifierNode('a'), IdentifierNode('b'), PAIR_CDR_TOKEN, nil)
-        self.assertEqual(expected, read('(a b)')[0])
-
-    def test_read_square_brackets_converts_to_list_special_form(self):
-        expected = FormNode(IdentifierNode('list'), Forms(IdentifierNode('a'), IdentifierNode('b')))
-        self.assertEqual(expected, read('[a b]')[0])
-
-    def test_read_square_brackets_with_cdr_converts_to_list_special_form(self):
-        expected = FormNode(IdentifierNode('list'), Forms(IdentifierNode('a'), PAIR_CDR_TOKEN, IdentifierNode('b')))
-        self.assertEqual(expected, read('[a | b]')[0])
+    # eval tests
 
     def test_eval(self):
         self.assertEqual(11, isheval('(add 5 6)'))
         self.assertEqual(8, isheval('(add 5 (add 1 2))'))
         self.assertEqual(18, isheval('(add (add 5 10) (add 1 2))'))
 
-    def test_eval_lists(self):
+    def _test_builtin_id(self):
+        self.assertEqual(2, isheval('(id | 2)'))
+        self.assertEqual(5, isheval('(id | (add 2 3))'))
+        self.assertEqual(Pair(1, nil), isheval('(id | [1]'))
+        self.assertEqual(Pair(1, 2), isheval('(id | [1 | 2]'))
+        self.assertEqual(Pair(1, nil), isheval('(id 1)'))
+        self.assertEqual(20, isheval('((id | id) 10)'))
+        # self.assertEqual(Pair(10, 20), isheval('[(add 5 5) | (add 10 10)]'))
+
+    def _test_eval_lists(self):
         self.assertEqual(Pair(1, nil), isheval('[1]'))
         self.assertEqual(Pair(1, Pair(2, Pair(3, nil))), isheval('[1 2 3]'))
         self.assertEqual(Pair(1, 2), isheval('[1 | 2]'))
@@ -79,7 +63,7 @@ class Tests(unittest.TestCase):
         self.assertEqual(Pair(30, nil), isheval('[(add 10 20)]'))
         self.assertEqual(Pair(30, 50), isheval('[(add 10 20) | (add 25 25)]'))
 
-    def test_eval_fns(self):
+    def _test_eval_fns(self):
         self.assertEqual(20, isheval('((fn x 20))'))
         self.assertEqual(5, isheval('((fn x x) | 5)'))
         self.assertEqual(5, isheval('((fn x (car x)) | [5])'))
@@ -87,36 +71,102 @@ class Tests(unittest.TestCase):
         self.assertEqual(Pair(5, nil), isheval('((fn x x) (add 2 3)))'))
         self.assertEqual(30, isheval('((fn x (add 10 (car x))) 20)'))
 
-
-    def test_builtins(self):
+    def _test_builtins(self):
         self.assertEqual(1, isheval('(car [1])'))
         self.assertEqual(nil, isheval('(cdr [1])'))
+        self.assertEqual(nil, isheval('(id | nil)'))
+        self.assertEqual(5, isheval('(id | 5)'))
+        self.assertEqual(Pair(5, nil), isheval('(id | [5])'))
+        self.assertEqual(5, isheval('(id | (add 2 3))'))
+        self.assertEqual(Pair(5, nil), isheval('(id (add 2 3))'))
 
-    def test_read(self):
-        code = '''
-        (print (add 5 6))
-        (print [7 | 8])
-        (print [(add 10 20)])
-        '''
+    # read tests
 
-        actual = read(code)
-        expected = [
+    def test_read_trivial_form(self):
+        self.assertEqual(
+            FormNode(IdentifierNode('a'), nil),
+            read('(a)')[0])
+    def test_read_form_with_cdr(self):
+        self.assertEqual(
+            FormNode(IdentifierNode('a'), IdentifierNode('b')),
+            read('(a | b)')[0])
+    def test_read_form_with_form_as_cdr(self):
+        self.assertEqual(
+            FormNode(IdentifierNode('a'), FormNode(IdentifierNode('b'), nil)),
+            read('(a | (b))')[0])
+    def test_read_form_without_cdr(self):
+        self.assertEqual(
+            Forms(IdentifierNode('a'), IdentifierNode('b')),
+            read('(a b)')[0])
+    def test_read_form_without_cdr_implicit_nil(self):
+        self.assertEqual(
+            Forms(IdentifierNode('a'), IdentifierNode('b'), PAIR_CDR_TOKEN, nil),
+            read('(a b)')[0])
+    def test_read_square_brackets_converts_to_list_special_form(self):
+        self.assertEqual(
+            Forms(IdentifierNode('list'), IdentifierNode('a'), IdentifierNode('b')),
+            read('[a b]')[0])
+    def test_read_square_brackets_with_cdr_converts_to_list_special_form(self):
+        self.assertEqual(
+            FormNode(IdentifierNode('list'), Pair(IdentifierNode('a'), IdentifierNode('b'))),
+            read('[a | b]')[0])
+    def test_read_square_brackets_must_have_cdr(self):
+        self.assertRaises(Exception, lambda: read('[a |]'))
+    def test_read_square_brackets_must_have_car(self):
+        self.assertRaises(Exception, lambda: read('[| a]'))
+    def test_read_square_brackets_must_have_car_and_cdr(self):
+        self.assertRaises(Exception, lambda: read('[|]'))
+    def test_read_square_brackets_must_not_have_multiple_cdrs(self):
+        self.assertRaises(Exception, lambda: read('[a | b c]'))
+    def test_read_misc(self):
+        self.assertEqual(
+            FormNode(IdentifierNode('id'), Pair(NumericLiteralNode('1'), nil)),
+            read_one('(id 1)'))
+        self.assertEqual(
+            FormNode(IdentifierNode('id'), Pair(NumericLiteralNode('1'), Pair(NumericLiteralNode('2'), nil))),
+            read_one('(id 1 2)'))
+        self.assertEqual(
+            FormNode(IdentifierNode('id'), NumericLiteralNode('1')),
+            read_one('(id | 1)'))
+        self.assertEqual(
+            FormNode(IdentifierNode('id'), FormNode(IdentifierNode('add'),
+                Pair(NumericLiteralNode('1'), Pair(NumericLiteralNode('2'), nil)))),
+            read_one('(id | (add 1 2)'))
+        self.assertEqual(
+            FormNode(IdentifierNode('id'), FormNode(IdentifierNode('list'),
+                Pair(NumericLiteralNode('1'), Pair(NumericLiteralNode('2'), nil)))),
+            read_one('(id | [1 2])'))
+        self.assertEqual(
+            FormNode(IdentifierNode('id'), FormNode(IdentifierNode('list'),
+                Pair(NumericLiteralNode('1'), NumericLiteralNode('2')))),
+            read_one('(id | [1 | 2])'))
+        self.assertEqual(
+            FormNode(FormNode(IdentifierNode('id'), IdentifierNode('id')), NumericLiteralNode('1')),
+            read_one('((id | id) | 1)'))
+
+        self.assertEqual(Forms(IdentifierNode('print'),
+            Forms(IdentifierNode('add'),
+                NumericLiteralNode('5'),
+                NumericLiteralNode('6'))),
+            read_one('(print (add 5 6))'))
+
+        self.assertEqual(
             Forms(IdentifierNode('print'),
-                Forms(IdentifierNode('add'),
-                    NumericLiteralNode('5'),
-                    NumericLiteralNode('6'))),
-            Forms(IdentifierNode('print'),
-                FormNode(IdentifierNode('list'), Forms(
-                    NumericLiteralNode('7'),
-                    PAIR_CDR_TOKEN,
-                    NumericLiteralNode('8')))),
-            Forms(IdentifierNode('print'),
-                FormNode(IdentifierNode('list'), Forms(
-                    Forms(IdentifierNode('add'),
+                FormNode(IdentifierNode('list'), Pair(NumericLiteralNode('7'), NumericLiteralNode('8')))),
+            read_one('(print [7 | 8])'))
+
+        self.assertEqual(
+            Forms(
+                IdentifierNode('print'),
+                Forms(
+                    IdentifierNode('list'),
+                    Forms(
+                        IdentifierNode('add'),
                         NumericLiteralNode('10'),
-                        NumericLiteralNode('20'))))),
-        ]
-        self.assertEqual(expected, read(code))
-
+                        NumericLiteralNode('20')
+                    )
+                ),
+            ),
+            read_one('(print [(add 10 20)])'))
 
 unittest.main()

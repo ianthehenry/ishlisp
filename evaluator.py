@@ -1,31 +1,7 @@
-from reader import nil, read, FormNode, IdentifierNode, NumericLiteralNode
+from reader import read, FormNode, IdentifierNode, NumericLiteralNode
 from types import FunctionType
+from core import Pair, nil
 # specials is imported below
-
-class Pair:
-    def __init__(self, car, cdr):
-        self.car = car
-        self.cdr = cdr
-    def __repr__(self):
-        if type(self.cdr) is Pair:
-            return "[%s %s" % (repr(self.car), self.cdr.continue_repr())
-        elif self.cdr is nil:
-            return "[%s]" % self.car
-        else:
-            return "[%s | %s]" % (repr(self.car), repr(self.cdr))
-    def __str__(self):
-        return "Pair [%s | %s]" % (str(self.car), str(self.cdr))
-    def continue_repr(self):
-        car, cdr = (self.car, self.cdr)
-
-        if type(cdr) is Pair:
-            return "%s %s" % (repr(car), cdr.continue_repr())
-        elif cdr is nil:
-            return "%s]" % repr(car)
-        else:
-            return "%s | %s]" % (repr(car), repr(cdr))
-    def __eq__(self, other):
-        return type(other) is Pair and self.car == other.car and self.cdr == other.cdr
 
 class Scope:
     def __init__(self, dict, parent):
@@ -35,7 +11,6 @@ class Scope:
         if identifier in self.dict:
             return self.dict[identifier]
         if self.parent is None:
-            print(self.dict)
             raise Exception("identifier '%s' is not in scope" % identifier)
         return self.parent.get(identifier)
 
@@ -43,9 +18,11 @@ def eval_node(node, scope):
     if node is nil:
         return nil
 
+    if type(node) is Pair:
+        return node
+
     if type(node) is FormNode:
         fn = eval_node(node.car, scope)
-
         assert type(fn) is FunctionType
         return fn(node.cdr, scope)
     elif type(node) is IdentifierNode:
@@ -53,7 +30,7 @@ def eval_node(node, scope):
     elif type(node) is NumericLiteralNode:
         return node.num
     else:
-        raise Exception("I don't know how to eval %s (%s)" % (repr(node), type(node)))
+        raise Exception("I don't know how to eval %s (%s)" % (str(node), type(node)))
 
 import specials # we have to do this here because it relies on the eval_node function
 

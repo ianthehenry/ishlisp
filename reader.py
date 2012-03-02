@@ -42,7 +42,10 @@ def continue_repr(tup, closing_symbol):
     else:
         return "%s | %s%s" % (repr(car), repr(cdr), closing_symbol)
 
-class FormNode:
+class Node:
+    pass
+
+class FormNode(Node):
     def __init__(self, *sexp):
         self.sexp = tuplify(sexp)
         self.car = self.sexp[0]
@@ -61,7 +64,7 @@ class FormNode:
     def __eq__(self, other):
         return type(other) is FormNode and self.sexp == other.sexp
 
-class PairNode:
+class PairNode(Node):
     def __init__(self, *sexp):
         self.sexp = tuplify(sexp)
         self.car = self.sexp[0]
@@ -79,6 +82,18 @@ class PairNode:
         return len(self.sexp)
     def __eq__(self, other):
         return type(other) is PairNode and self.sexp == other.sexp
+
+class IdentifierNode(Node):
+    def __init__(self, token):
+        self.identifier = token
+    def __repr__(self):
+        return self.identifier
+
+class NumericLiteralNode(Node):
+    def __init__(self, token):
+        self.num = int(token)
+    def __repr__(self):
+        return repr(self.num)
 
 def lex(code): # converts string to tokens, currently represented as simple strings
     boundaries = set([' ', '\t', '\n', ')', '(', '|', '[', ']', '{', '}'])
@@ -117,8 +132,8 @@ def read_matched_code(tokens, start, end, constructor, empty_constructor):
 
 def parse_single_token(token):
     if re.match(r'\d+', token):
-        return int(token)
-    return token
+        return NumericLiteralNode(token)
+    return IdentifierNode(token)
 
 matched_tokens = {
     '(': (')', FormNode, lambda: nil), # this should actually throw an exception, but i'm allowing it for now...makes sense if nil can be used as a function

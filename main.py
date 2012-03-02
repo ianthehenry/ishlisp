@@ -1,4 +1,4 @@
-import re
+import re, unittest
 from itertools import takewhile
 
 nil = None
@@ -68,8 +68,10 @@ class FormToken:
     def __repr__(self):
         if type(self.cdr) is Pair:
             return "(%s %s" % (repr(self.car), continue_repr(self.cdr, ')'))
+        elif type(self.cdr) is FormToken:
+            return "(%s %s" % (repr(self.car), continue_repr(self.cdr.sexp, ')'))
         elif self.cdr is nil:
-            return "%s)" % self.car
+            return "(%s)" % self.car
         else:
             return "(%s | %s)" % (repr(self.car), repr(self.cdr))
     def __len__(self):
@@ -85,8 +87,10 @@ class PairToken:
     def __repr__(self):
         if type(self.cdr) is Pair:
             return "[%s %s" % (repr(self.car), continue_repr(self.cdr, ']'))
+        elif type(self.cdr) is PairToken:
+            return "[%s %s" % (repr(self.car), continue_repr(self.cdr.sexp, ']'))
         elif self.cdr is nil:
-            return "%s]" % self.car
+            return "[%s]" % self.car
         else:
             return "[%s | %s]" % (repr(self.car), repr(self.cdr))
     def __len__(self):
@@ -151,6 +155,39 @@ code = '''
 (print [7 | 8])
 (print [(add 10 20)])
 '''
+
+def get_single_form(code):
+    return read(lex(code))[0]
+
+class Tests(unittest.TestCase):
+    def _repr_is_homoiconic(self, code):
+        self.assertEqual(code, repr(get_single_form(code)))
+
+    def test_pair_token_repr(self):
+        self.assertEqual('nil', repr(get_single_form('[]')))
+        self.assertEqual('[1 2]', repr(get_single_form('[1 | [2]]')))
+        self._repr_is_homoiconic('[1]')
+        self._repr_is_homoiconic('[1 | 2]')
+        self._repr_is_homoiconic('[1 2 | 3]')
+        self._repr_is_homoiconic('[1 2 3]')
+        self.assertRaises(Exception, lambda: read(lex('[|]')))
+        self.assertRaises(Exception, lambda: read(lex('[1 |]')))
+        self.assertRaises(Exception, lambda: read(lex('[| 1]')))
+        self.assertRaises(Exception, lambda: read(lex('[1 | 2 3]')))
+
+    def test_form_token_repr(self):
+        self.assertEqual('nil', repr(get_single_form('()')))
+        self.assertEqual('(1 2)', repr(get_single_form('(1 | (2))')))
+        self._repr_is_homoiconic('(1)')
+        self._repr_is_homoiconic('(1 | 2)')
+        self._repr_is_homoiconic('(1 2 | 3)')
+        self._repr_is_homoiconic('(1 2 3)')
+        self.assertRaises(Exception, lambda: read(lex('(|)')))
+        self.assertRaises(Exception, lambda: read(lex('(1 |)')))
+        self.assertRaises(Exception, lambda: read(lex('(| 1)')))
+        self.assertRaises(Exception, lambda: read(lex('(1 | 2 3)')))
+
+# unittest.main()
 
 actual = read(lex(code))
 expected = [

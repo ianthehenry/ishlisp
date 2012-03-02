@@ -1,4 +1,28 @@
 from reader import nil, read, FormNode, PairNode, IdentifierNode, NumericLiteralNode
+# specials is imported below
+
+class Pair:
+    def __init__(self, car, cdr):
+        self.car = car
+        self.cdr = cdr
+
+    def __repr__(self):
+        if type(self.cdr) is Pair:
+            return "[%s %s" % (repr(self.car), self.cdr.continue_repr())
+        elif self.cdr is nil:
+            return "[%s]" % self.car
+        else:
+            return "[%s | %s]" % (repr(self.car), repr(self.cdr))
+
+    def continue_repr(self):
+        car, cdr = (self.car, self.cdr)
+
+        if type(cdr) is Pair:
+            return "%s %s" % (repr(car), cdr.continue_repr())
+        elif cdr is nil:
+            return "%s]" % repr(car)
+        else:
+            return "%s | %s]" % (repr(car), repr(cdr))
 
 class Scope:
     def __init__(self, dict, parent):
@@ -13,7 +37,11 @@ class Scope:
         return self.parent.get(identifier)
 
 def eval_node(node, scope):
-    assert node is not nil
+    # it might be nicer to represent PairNodes as actual pairs, not tuples, so that we don't have to do this
+    if node is nil:
+        return nil
+    elif type(node) is tuple:
+        return Pair(node[0], eval_node(node[1], scope))
 
     if type(node) is FormNode:
         assert type(node.car) is IdentifierNode
@@ -23,13 +51,18 @@ def eval_node(node, scope):
         return scope.get(node.identifier)
     elif type(node) is NumericLiteralNode:
         return node.num
+    elif type(node) is PairNode:
+        return Pair(eval_node(node.car, scope), eval_node(node.cdr, scope))
     else:
         raise Exception("I don't know how to do eval %s" % repr(node))
 
+import specials # we have to do this here because it relies on the eval_node function
+
 root = Scope({
-    'print': lambda arg, scope: print(eval_node(arg[0], scope)),
-    'add': lambda arg, scope: eval_node(arg[0], scope) + eval_node(arg[1][0], scope),
-    'id': lambda arg, scope: arg[0],
+    'print': specials.print_,
+    'add': specials.add,
+    'id': specials.id,
+    'pair': specials.pair,
     'nil': nil
 }, None)
 

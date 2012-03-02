@@ -11,11 +11,11 @@ class Nil:
         return 'nil'
 
 nil = Nil()
-Pair = tuple
 PAIR_CDR_TOKEN = '|'
 
 def tuplify(lst):
     if type(lst) is not tuple:
+        assert isinstance(lst, Node)
         return lst
     if len(lst) == 0:
         return nil
@@ -35,7 +35,7 @@ def continue_repr(tup, closing_symbol):
     assert len(tup) == 2
     car, cdr = tup
 
-    if type(cdr) is Pair:
+    if type(cdr) is tuple:
         return "%s %s" % (repr(car), continue_repr(cdr, closing_symbol))
     elif cdr is nil:
         return "%s%s" % (repr(car), closing_symbol)
@@ -51,7 +51,9 @@ class FormNode(Node):
         self.car = self.sexp[0]
         self.cdr = self.sexp[1]
     def __repr__(self):
-        if type(self.cdr) is Pair:
+        # print(self)
+        # print(type(self.cdr))
+        if type(self.cdr) is tuple:
             return "(%s %s" % (repr(self.car), continue_repr(self.cdr, ')'))
         elif type(self.cdr) is FormNode:
             return "(%s %s" % (repr(self.car), continue_repr(self.cdr.sexp, ')'))
@@ -70,12 +72,12 @@ class PairNode(Node):
         self.car = self.sexp[0]
         self.cdr = self.sexp[1]
     def __repr__(self):
-        if type(self.cdr) is Pair:
+        if type(self.cdr) is tuple:
             return "[%s %s" % (repr(self.car), continue_repr(self.cdr, ']'))
         elif type(self.cdr) is PairNode:
             return "[%s %s" % (repr(self.car), continue_repr(self.cdr.sexp, ']'))
         elif self.cdr is nil:
-            return "[%s]" % self.car
+            return "[%s]" % repr(self.car)
         else:
             return "[%s | %s]" % (repr(self.car), repr(self.cdr))
     def __len__(self):
@@ -88,12 +90,17 @@ class IdentifierNode(Node):
         self.identifier = token
     def __repr__(self):
         return self.identifier
+    def __eq__(self, other):
+        return type(other) is IdentifierNode and self.identifier == other.identifier
 
 class NumericLiteralNode(Node):
     def __init__(self, token):
         self.num = int(token)
     def __repr__(self):
         return repr(self.num)
+    def __eq__(self, other):
+        return type(other) is NumericLiteralNode and self.num == other.num
+
 
 def lex(code): # converts string to tokens, currently represented as simple strings
     boundaries = set([' ', '\t', '\n', ')', '(', '|', '[', ']', '{', '}'])
@@ -131,8 +138,12 @@ def read_matched_code(tokens, start, end, constructor, empty_constructor):
     return (constructor(*parse(form_tokens)), len(form_tokens) + 1) # +1 to account for the closing paren/bracket/whatever
 
 def parse_single_token(token):
+    assert token not in matched_tokens
+
     if re.match(r'\d+', token):
         return NumericLiteralNode(token)
+    if token == PAIR_CDR_TOKEN:
+        return PAIR_CDR_TOKEN
     return IdentifierNode(token)
 
 matched_tokens = {
@@ -154,3 +165,4 @@ def parse(tokens): # converts token stream to s-expressions, parses numeric lite
 
 def read(code):
     return parse(lex(code))
+

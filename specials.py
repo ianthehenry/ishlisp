@@ -22,3 +22,26 @@ def list_(arg, scope):
     if type(arg) is not FormNode:
         raise Exception('cannot have a cdr without a car')
     return Pair(eval_node(arg.car, scope), list_(arg.cdr, scope) if type(arg.cdr) is FormNode else arg.cdr)
+
+def fn(arg, scope):
+    param_name = arg.car
+    forms = arg.cdr
+    assert type(param_name) is IdentifierNode
+    assert type(forms) is FormNode
+    param_name = param_name.identifier
+    def lambduh(arg, outer_scope):
+        nonlocal forms
+
+        # evaluate our argument...to define a macro rather than a function, simply remove this statement. and the making-a-new-scope thing. whatever.
+        if type(arg) is FormNode:
+            arg = list_(arg, outer_scope)
+        else:
+            arg = eval_node(arg, outer_scope)
+
+        inner_scope = Scope({param_name: arg}, outer_scope)
+        return_value = nil
+        while forms is not nil:
+            return_value = eval_node(forms.car, inner_scope)
+            forms = forms.cdr
+        return return_value
+    return lambduh

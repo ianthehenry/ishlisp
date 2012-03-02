@@ -38,14 +38,12 @@ class Scope:
         return self.parent.get(identifier)
 
 def eval_node(node, scope):
-    # it might be nicer to represent FormNodes as actual pairs, not tuples, so that we don't have to do this
     if node is nil:
         return nil
-    elif type(node) is tuple:
-        return Pair(node[0], eval_node(node[1], scope))
 
     if type(node) is FormNode:
         fn = eval_node(node.car, scope)
+
         assert type(fn) is FunctionType
         return fn(node.cdr, scope)
     elif type(node) is IdentifierNode:
@@ -64,6 +62,7 @@ root = Scope({
     'list': specials.list_,
     'car': specials.car,
     'cdr': specials.cdr,
+    'fn': specials.fn,
     'nil': nil
 }, None)
 

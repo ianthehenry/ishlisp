@@ -13,7 +13,7 @@ class Nil:
 nil = Nil()
 PAIR_CDR_TOKEN = '|'
 
-def tuplify(lst):
+def parse_forms(lst):
     if type(lst) is not tuple:
         assert isinstance(lst, Node)
         return lst
@@ -27,42 +27,35 @@ def tuplify(lst):
             raise Exception("no cdr specified after explicit cdr")
         if len(lst) > 3: # [a | b c]
             raise Exception("can only specify one cdr")
-        return (lst[0], lst[2])
+        return FormNode(lst[0], lst[2])
 
-    return (tuplify(lst[0]), tuplify(lst[1:]))
-
-def continue_repr(tup):
-    assert len(tup) == 2
-    car, cdr = tup
-
-    if type(cdr) is tuple:
-        return "%s %s" % (repr(car), continue_repr(cdr))
-    elif cdr is nil:
-        return "%s)" % repr(car)
-    else:
-        return "%s | %s)" % (repr(car), repr(cdr))
+    return FormNode(parse_forms(lst[0]), parse_forms(lst[1:]))
 
 class Node:
     pass
 
 class FormNode(Node):
-    def __init__(self, *sexp):
-        self.sexp = tuplify(sexp)
-        self.car = self.sexp[0]
-        self.cdr = self.sexp[1]
+    def __init__(self, car, cdr):
+        self.car = car
+        self.cdr = cdr
     def __repr__(self):
-        if type(self.cdr) is tuple:
-            return "(%s %s" % (repr(self.car), continue_repr(self.cdr))
-        elif type(self.cdr) is FormNode: # this is potentially a little misleading, as it's not showing you the exact parse tree, but i think it's okay for now
-            return "(%s %s" % (repr(self.car), continue_repr(self.cdr.sexp))
+        if type(self.cdr) is FormNode: # this is potentially a little misleading, as it's not showing you the exact parse tree, but i think it's okay for now
+            return "(%s %s" % (repr(self.car), self.cdr.continue_repr())
         elif self.cdr is nil:
             return "(%s)" % repr(self.car)
         else:
             return "(%s | %s)" % (repr(self.car), repr(self.cdr))
+    def continue_repr(self):
+        if type(self.cdr) is FormNode:
+            return "%s %s" % (repr(self.car), self.cdr.continue_repr())
+        elif self.cdr is nil:
+            return "%s)" % repr(self.car)
+        else:
+            return "%s | %s)" % (repr(self.car), repr(self.cdr))
     def __len__(self):
         return len(self.sexp)
     def __eq__(self, other):
-        return type(other) is FormNode and self.sexp == other.sexp
+        return type(other) is FormNode and self.car == other.car and self.cdr == other.cdr
 
 class IdentifierNode(Node):
     def __init__(self, token):
@@ -79,7 +72,6 @@ class NumericLiteralNode(Node):
         return repr(self.num)
     def __eq__(self, other):
         return type(other) is NumericLiteralNode and self.num == other.num
-
 
 def lex(code): # converts string to tokens, currently represented as simple strings
     boundaries = set([' ', '\t', '\n', ')', '(', '|', '[', ']', '{', '}'])
@@ -126,8 +118,8 @@ def parse_single_token(token):
     return IdentifierNode(token)
 
 matched_tokens = {
-    '(': (')', FormNode, lambda: nil), # this should actually throw an exception, but i'm allowing it for now...makes sense if nil can be used as a function
-    '[': (']', lambda *sexp: FormNode(IdentifierNode('pair'), FormNode(*sexp)), lambda: nil)
+    '(': (')', lambda *sexp: parse_forms(sexp), lambda: nil), # this should actually throw an exception, but i'm allowing it for now...makes sense if nil can be used as a function
+    '[': (']', lambda *sexp: FormNode(IdentifierNode('pair'), parse_forms(sexp)), lambda: nil)
 }
 
 def parse(tokens): # converts token stream to s-expressions, parses numeric literals, etc
@@ -144,4 +136,3 @@ def parse(tokens): # converts token stream to s-expressions, parses numeric lite
 
 def read(code):
     return parse(lex(code))
-

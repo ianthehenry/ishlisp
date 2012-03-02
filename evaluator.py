@@ -1,4 +1,5 @@
 from reader import nil, read, FormNode, IdentifierNode, NumericLiteralNode
+from types import FunctionType
 # specials is imported below
 
 class Pair:
@@ -44,15 +45,15 @@ def eval_node(node, scope):
         return Pair(node[0], eval_node(node[1], scope))
 
     if type(node) is FormNode:
-        assert type(node.car) is IdentifierNode
-        fn = scope.get(node.car.identifier)
+        fn = eval_node(node.car, scope)
+        assert type(fn) is FunctionType
         return fn(node.cdr, scope)
     elif type(node) is IdentifierNode:
         return scope.get(node.identifier)
     elif type(node) is NumericLiteralNode:
         return node.num
     else:
-        raise Exception("I don't know how to do eval %s" % repr(node))
+        raise Exception("I don't know how to eval %s (%s)" % (repr(node), type(node)))
 
 import specials # we have to do this here because it relies on the eval_node function
 
@@ -61,6 +62,8 @@ root = Scope({
     'add': specials.add,
     'id': specials.id,
     'pair': specials.pair,
+    'car': specials.car,
+    'cdr': specials.cdr,
     'nil': nil
 }, None)
 

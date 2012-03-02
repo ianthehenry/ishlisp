@@ -1,18 +1,24 @@
-from evaluator import eval_node, Pair
-from reader import FormNode, nil
+from evaluator import eval_node, Pair, Scope
+from reader import FormNode, nil, IdentifierNode, Node
 
 def print_(arg, scope):
-    print(eval_node(arg[0], scope))
+    print(eval_node(arg.car, scope))
 
 def add(arg, scope):
-    return eval_node(arg[0], scope) + eval_node(arg[1][0], scope)
+    return eval_node(arg.car, scope) + eval_node(arg.cdr.car, scope)
 
 def id(arg, scope):
-    return eval_node(arg[0])
+    return eval_node(arg.car, scope)
+
+def car(arg, scope):
+    return eval_node(arg.car, scope).car
+
+def cdr(arg, scope):
+    return eval_node(arg.car, scope).cdr
 
 def pair(arg, scope):
-    form_node = arg[0]
-    assert type(form_node) is FormNode
-    assert arg[1] is nil
-
-    return Pair(eval_node(form_node.car, scope), eval_node(form_node.cdr, scope))
+    if arg is nil:
+        return nil
+    if type(arg) is not FormNode:
+        raise Exception('cannot have a cdr without a car')
+    return Pair(eval_node(arg.car, scope), eval_node(FormNode(IdentifierNode('pair'), arg.cdr) if type(arg.cdr) is FormNode else arg.cdr, scope))

@@ -1,8 +1,11 @@
 import unittest
-from reader import read, tuplify, FormNode, PAIR_CDR_TOKEN, NumericLiteralNode, IdentifierNode, nil
+from reader import read, parse_forms, FormNode, PAIR_CDR_TOKEN, NumericLiteralNode, IdentifierNode, nil
 
 def get_single_form(code):
     return read(code)[0]
+
+def Forms(*nodes):
+    return parse_forms(nodes)
 
 class Tests(unittest.TestCase):
     def _repr_is_homoiconic(self, code):
@@ -36,23 +39,23 @@ class Tests(unittest.TestCase):
         self.assertRaises(Exception, lambda: read('(1 | 2 3)'))
 
     def test_read_form_with_cdr(self):
-        expected = FormNode(IdentifierNode('a'), PAIR_CDR_TOKEN, IdentifierNode('b'))
+        expected = Forms(IdentifierNode('a'), PAIR_CDR_TOKEN, IdentifierNode('b'))
         self.assertEqual(expected, read('(a | b)')[0])
 
     def test_read_form_without_cdr(self):
-        expected = FormNode(IdentifierNode('a'), IdentifierNode('b'))
+        expected = Forms(IdentifierNode('a'), IdentifierNode('b'))
         self.assertEqual(expected, read('(a b)')[0])
 
     def test_read_form_without_cdr_implicit_nil(self):
-        expected = FormNode(IdentifierNode('a'), IdentifierNode('b'), PAIR_CDR_TOKEN, nil)
+        expected = Forms(IdentifierNode('a'), IdentifierNode('b'), PAIR_CDR_TOKEN, nil)
         self.assertEqual(expected, read('(a b)')[0])
 
     def test_read_square_brackets_converts_to_pair_special_form(self):
-        expected = FormNode(IdentifierNode('pair'), FormNode(IdentifierNode('a'), IdentifierNode('b')))
+        expected = FormNode(IdentifierNode('pair'), Forms(IdentifierNode('a'), IdentifierNode('b')))
         self.assertEqual(expected, read('[a b]')[0])
 
     def test_read_square_brackets_with_cdr_converts_to_pair_special_form(self):
-        expected = FormNode(IdentifierNode('pair'), FormNode(IdentifierNode('a'), PAIR_CDR_TOKEN, IdentifierNode('b')))
+        expected = FormNode(IdentifierNode('pair'), Forms(IdentifierNode('a'), PAIR_CDR_TOKEN, IdentifierNode('b')))
         self.assertEqual(expected, read('[a | b]')[0])
 
     def test_read(self):
@@ -64,18 +67,18 @@ class Tests(unittest.TestCase):
 
         actual = read(code)
         expected = [
-            FormNode(IdentifierNode('print'),
-                FormNode(IdentifierNode('add'),
+            Forms(IdentifierNode('print'),
+                Forms(IdentifierNode('add'),
                     NumericLiteralNode('5'),
                     NumericLiteralNode('6'))),
-            FormNode(IdentifierNode('print'),
-                FormNode(IdentifierNode('pair'), FormNode(
+            Forms(IdentifierNode('print'),
+                FormNode(IdentifierNode('pair'), Forms(
                     NumericLiteralNode('7'),
                     PAIR_CDR_TOKEN,
                     NumericLiteralNode('8')))),
-            FormNode(IdentifierNode('print'),
-                FormNode(IdentifierNode('pair'), FormNode(
-                    FormNode(IdentifierNode('add'),
+            Forms(IdentifierNode('print'),
+                FormNode(IdentifierNode('pair'), Forms(
+                    Forms(IdentifierNode('add'),
                         NumericLiteralNode('10'),
                         NumericLiteralNode('20'))))),
         ]

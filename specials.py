@@ -1,5 +1,4 @@
-from evaluator import eval_node, Pair, Scope
-from reader import FormNode, nil, IdentifierNode, Node
+# imports at bottom of file
 
 def print_(arg, scope):
     print(eval_node(arg.car, scope))
@@ -17,10 +16,46 @@ def id(arg, scope):
     return eval_node(arg, scope)
 
 def car(arg, scope):
+    assert type(arg) is Pair
+    assert eval_node(arg.cdr, scope) is nil
     return eval_node(arg.car, scope).car
 
 def cdr(arg, scope):
+    assert type(arg) is Pair
+    assert eval_node(arg.cdr, scope) is nil
     return eval_node(arg.car, scope).cdr
+
+def call(arg, scope):
+    assert type(arg) is Pair
+    function = eval_node(arg.car, scope)
+    assert type(arg.cdr) is Pair
+    return function(arg.cdr, scope)
+
+def apply(arg, scope):
+    assert type(arg) is Pair
+    function = eval_node(arg.car, scope)
+    assert type(arg.cdr) is Pair
+    argument = eval_node(arg.cdr.car, scope)
+    assert type(argument) is Pair
+    assert eval_node(arg.cdr.cdr, scope) is nil
+    return function(argument, scope)
+
+def curry(arg, scope):
+    assert type(arg) is Pair
+    function = eval_node(arg.car, scope)
+    assert type(arg.cdr) is Pair
+    arguments = eval_node(arg.cdr, scope)
+    last = arguments
+    while last.cdr is not nil:
+        assert type(last) is Pair
+        last = last.cdr
+
+    def curried(more_args, scope):
+        assert type(more_args) is Pair
+        last.cdr = more_args
+        return function(arguments, scope)
+
+    return curried
 
 def list_(arg, scope):
     if arg is nil:
@@ -29,18 +64,49 @@ def list_(arg, scope):
         raise Exception('cannot have a cdr without a car')
     return Pair(eval_node(arg.car, scope), eval_node(arg.cdr, scope))
 
+def get(arg, scope):
+    raise Exception("not yet implemented")
+
 def fn(declaration, outer_scope):
-    param_name = declaration.car
-    assert type(param_name) is IdentifierNode # will be a pattern soon
+    param_pattern = pattern(declaration.car, outer_scope)
     assert type(declaration.cdr) is Pair
-    param_name = param_name.identifier
 
     def lambduh(arg, invoking_scope):
         forms = declaration.cdr
-        inner_scope = Scope({param_name: eval_node(arg, invoking_scope)}, outer_scope)
+        inner_scope = Scope({}, outer_scope)
+        evaled_arg = eval_node(arg, invoking_scope)
+        if not param_pattern.match(evaled_arg, inner_scope):
+            raise Exception("pattern did not match. pattern: '%s' actual: '%s'" % (repr(param_pattern), repr(evaled_arg)))
         return_value = nil
         while forms is not nil:
             return_value = eval_node(forms.car, inner_scope)
             forms = forms.cdr
         return return_value
     return lambduh
+
+def match(arg, scope):
+    raise Exception("not yet implemented")
+
+def pattern(arg, scope):
+    assert type(arg) is Pair or isinstance(arg, Node)
+
+    if type(arg) is Pair:
+        arg = arg.car
+
+    if type(arg) is IdentifierNode:
+        return IdentifierPattern(arg, scope)
+
+    if type(arg) is FormNode:
+        car = eval_node(arg.car, scope)
+        if car is cons:
+            return ConsPattern(arg.cdr, scope)
+        elif car is list_:
+            return ConsPattern(arg.cdr, scope, True)
+        else:
+            raise Exception("unrecognized special form in pattern")
+    return ValuePattern(arg, scope)
+
+from core import Pair, nil
+from reader import FormNode, IdentifierNode, ValueNode
+from evaluator import eval_node, Scope
+from patterns import *

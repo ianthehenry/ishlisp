@@ -1,11 +1,24 @@
 import re
 from core import Pair, nil
 from itertools import takewhile
+# more imports below
 
 PAIR_CDR_TOKEN = '|'
 
 class Node:
     pass
+
+class ValueNode(Node):
+    def __init__(self, name, value):
+        assert type(name) is str
+        self.value = value
+        self.name = name
+    def __repr__(self):
+        return self.name
+    def __str__(self):
+        return "(ValueNode '%s')" % self.name
+    def __eq__(self, other):
+        return type(other) is ValueNode and self.value == other.value
 
 class BinaryOperatorNode(Node):
     def __init__(self, token, special_form, precedence, associativity):
@@ -17,11 +30,6 @@ class BinaryOperatorNode(Node):
         return self.token
     def __str__(self):
         return "BinaryOperatorNode '%s'" % self.token
-
-BINARY_OPERATORS = {
-    ':': BinaryOperatorNode(':', 'cons', 2, 'right'),
-    '.': BinaryOperatorNode('.', 'get', 1, 'left')
-}
 
 def parse_forms(lst, is_form_node = True):
     constructor = FormNode if is_form_node else Pair
@@ -62,7 +70,7 @@ class FormNode(Node):
     def __len__(self):
         return len(self.sexp)
     def __str__(self):
-        return "FormNode '[%s | %s]'" % (str(self.car), str(self.cdr))
+        return "(FormNode %s %s)" % (str(self.car), str(self.cdr))
     def __eq__(self, other):
         return type(other) is FormNode and self.car == other.car and self.cdr == other.cdr
 
@@ -73,7 +81,7 @@ class IdentifierNode(Node):
     def __repr__(self):
         return self.identifier
     def __str__(self):
-        return "IdentifierNode %s" % repr(self.identifier)
+        return "(IdentifierNode %s)" % self.identifier
     def __eq__(self, other):
         return type(other) is IdentifierNode and self.identifier == other.identifier
 
@@ -84,7 +92,7 @@ class NumericLiteralNode(Node):
     def __repr__(self):
         return repr(self.num)
     def __str__(self):
-        return "NumericLiteralNode '%s'" % repr(self.num)
+        return "(NumericLiteralNode '%s')" % repr(self.num)
     def __eq__(self, other):
         return type(other) is NumericLiteralNode and self.num == other.num
 
@@ -182,7 +190,7 @@ def expand_binary_operators(nodes):
     def pop_node():
         node = output_queue.pop()
         if type(node) is BinaryOperatorNode:
-            return parse_forms((IdentifierNode(node.special_form), pop_node(), pop_node()))
+            return parse_forms((node.special_form, pop_node(), pop_node()))
         else:
             return node
 
@@ -209,3 +217,10 @@ def parse_and_expand(tokens):
 
 def read(code):
     return parse_and_expand(lex(code))
+
+import specials
+
+BINARY_OPERATORS = {
+    ':': BinaryOperatorNode(':', ValueNode('_cons', specials.cons), 2, 'right'),
+    '.': BinaryOperatorNode('.', ValueNode('_get', specials.get), 1, 'left')
+}

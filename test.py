@@ -149,6 +149,12 @@ class Tests(unittest.TestCase):
         self.assertEqual(['(', 'a', 'b', ')'], lex('(a b)'))
         self.assertEqual(['(', 'a', ')', 'b', ')'], lex('(a) b)'))
 
+    def test_lex_operators(self):
+        self.assertEqual(['a', ':', 'b'], lex('a:b'))
+        self.assertEqual(['a', '.', 'b', ':', 'c'], lex('a.b:c'))
+        self.assertEqual(['a', ':', ':', 'b'], lex('a: :b'))
+        self.assertEqual(['a', '::', 'b'], lex('a::b'))
+
     # read tests
 
     def test_expand_binary_operators(self):

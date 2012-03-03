@@ -96,6 +96,12 @@ class NumericLiteralNode(Node):
     def __eq__(self, other):
         return type(other) is NumericLiteralNode and self.num == other.num
 
+def lookahead(indexable):
+    i = 0
+    while i < len(indexable):
+        yield (indexable[i], indexable[i + 1] if i < len(indexable) - 1 else None)
+        i += 1
+
 def lex(code): # converts string to tokens, currently represented as simple strings
     boundaries = set([' ', '\t', '\n', ')', '(', '|', '[', ']', '{', '}']) | BINARY_OPERATORS.keys()
     tokens = []
@@ -104,13 +110,22 @@ def lex(code): # converts string to tokens, currently represented as simple stri
         if not re.match(r'^\s*$', token):
             tokens.append(token)
     current_token = []
-    for c in code:
-        if c in boundaries:
+    skip_character = False
+    for current_char, next_char in lookahead(code):
+        if skip_character:
+            skip_character = False
+            continue
+        if next_char is not None and current_char + next_char in boundaries:
             end_token(current_token)
-            end_token([c])
+            end_token([current_char, next_char])
+            current_token = []
+            skip_character = True
+        elif current_char in boundaries:
+            end_token(current_token)
+            end_token([current_char])
             current_token = []
         else:
-            current_token += c
+            current_token += current_char
     end_token(current_token)
     return tokens
 
@@ -221,6 +236,7 @@ def read(code):
 import specials
 
 BINARY_OPERATORS = {
-    ':': BinaryOperatorNode(':', ValueNode('_cons', specials.cons), 2, 'right'),
-    '.': BinaryOperatorNode('.', ValueNode('_get', specials.get), 1, 'left')
+    ':': BinaryOperatorNode(':', ValueNode('_cons', specials.cons), 3, 'right'),
+    '.': BinaryOperatorNode('.', ValueNode('_get', specials.get), 2, 'left'),
+    '::': BinaryOperatorNode('::', IdentifierNode('pattern-with-predicate'), 1, 'left'), # ValueNode('_pattern-with-predicate', specials.pattern_with_predicate)
 }

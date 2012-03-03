@@ -8,6 +8,11 @@ def print_(arg, scope):
 def add(arg, scope):
     return eval_node(arg.car, scope) + eval_node(arg.cdr.car, scope)
 
+def cons(arg, scope):
+    car = arg.car
+    cdr = arg.cdr.car
+    return Pair(eval_node(car, scope), eval_node(cdr, scope))
+
 def id(arg, scope):
     return eval_node(arg, scope)
 

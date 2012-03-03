@@ -1,5 +1,5 @@
 import unittest
-from reader import lex, read, parse_forms, FormNode, PAIR_CDR_TOKEN, NumericLiteralNode, IdentifierNode, nil
+from reader import lex, read, parse_forms, FormNode, BINARY_OPERATORS, PAIR_CDR_TOKEN, NumericLiteralNode, IdentifierNode, nil, operator_expand
 from evaluator import isheval, Pair, root, Scope
 from types import LambdaType, FunctionType
 
@@ -104,6 +104,23 @@ class Tests(unittest.TestCase):
 
     # read tests
 
+    def test_operator_expand(self):
+        self.assertEqual(
+            [Forms(IdentifierNode('cons'), IdentifierNode('a'), IdentifierNode('b'))],
+            operator_expand([IdentifierNode('a'), BINARY_OPERATORS[':'], IdentifierNode('b')]))
+        self.assertEqual(
+            [IdentifierNode('x'), Forms(IdentifierNode('cons'), IdentifierNode('a'), IdentifierNode('b')), IdentifierNode('y')],
+            operator_expand([IdentifierNode('x'), IdentifierNode('a'), BINARY_OPERATORS[':'], IdentifierNode('b'), IdentifierNode('y')]))
+        self.assertEqual(
+            [Forms(IdentifierNode('cons'), IdentifierNode('a'), Forms(IdentifierNode('cons'), IdentifierNode('b'), IdentifierNode('c')))],
+            operator_expand([IdentifierNode('a'), BINARY_OPERATORS[':'], IdentifierNode('b'), BINARY_OPERATORS[':'], IdentifierNode('c')]))
+    def test_read_operator(self):
+        self.assertEqual(
+            Forms(IdentifierNode('cons'), IdentifierNode('a'), IdentifierNode('b')),
+            read_one('a:b'))
+        self.assertEqual(
+            Forms(IdentifierNode('print'), Forms(IdentifierNode('cons'), IdentifierNode('a'), IdentifierNode('b'))),
+            read_one('(print a:b)'))
     def test_read_bare_literals(self):
         self.assertEqual(IdentifierNode('a'), read_one('a'))
         self.assertEqual(NumericLiteralNode('10'), read_one('10'))

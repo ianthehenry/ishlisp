@@ -39,6 +39,7 @@ root = Scope({
     'add': specials.add,
     'id': specials.id,
     'list': specials.list_,
+    'cons': specials.cons,
     'car': specials.car,
     'cdr': specials.cdr,
     'fn': specials.fn,

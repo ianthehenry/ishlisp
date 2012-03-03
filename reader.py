@@ -7,7 +7,7 @@ PAIR_CDR_TOKEN = '|'
 class Node:
     pass
 
-class OperatorNode(Node):
+class BinaryOperatorNode(Node):
     def __init__(self, token, special_form, precedence, associativity):
         self.token = token
         self.special_form = special_form
@@ -16,9 +16,12 @@ class OperatorNode(Node):
     def __repr__(self):
         return self.token
     def __str__(self):
-        return "OperatorNode '%s'" % self.token
+        return "BinaryOperatorNode '%s'" % self.token
 
-BINARY_OPERATORS = { ':': OperatorNode(':', 'cons', 1, 'right') }
+BINARY_OPERATORS = {
+    ':': BinaryOperatorNode(':', 'cons', 2, 'right'),
+    '.': BinaryOperatorNode('.', 'get', 1, 'left')
+}
 
 def parse_forms(lst, is_form_node = True):
     constructor = FormNode if is_form_node else Pair
@@ -143,27 +146,42 @@ def reverse_iterator(items):
         yield items[i]
         i -= 1
 
-def operator_expand(nodes):
+def expand_binary_operators(nodes):
     output_queue = []
     operator_stack = []
+    last_node = None
 
-    def pop_operator():
-        output_queue.append(operator_stack.pop())
+    def is_space(node):
+        return type(last_node) is not BinaryOperatorNode and type(node) is not BinaryOperatorNode
+
+    def drain_operator_stack(node = None):
+        def should_drain():
+            if len(operator_stack) == 0:
+                return False
+            if node is None:
+                return True
+            if node.associativity == 'left':
+                return operator_stack[-1].precedence < node.precedence
+            else:
+                return operator_stack[-1].precedence <= node.precedence
+        while should_drain():
+            output_queue.append(operator_stack.pop())
 
     for node in reverse_iterator(nodes):
-        if type(node) is OperatorNode:
+        if is_space(node):
+            drain_operator_stack()
+        if type(node) is BinaryOperatorNode:
+            drain_operator_stack(node)
             operator_stack.append(node)
         else:
             output_queue.append(node)
-            if len(operator_stack) > 0:
-                pop_operator()
+        last_node = node
 
-    while len(operator_stack) > 0:
-        pop_operator()
+    drain_operator_stack()
 
     def pop_node():
         node = output_queue.pop()
-        if type(node) is OperatorNode:
+        if type(node) is BinaryOperatorNode:
             return parse_forms((IdentifierNode(node.special_form), pop_node(), pop_node()))
         else:
             return node
@@ -187,7 +205,7 @@ def parse(tokens): # converts token stream to s-expressions, parses numeric lite
     return [parse_single_token(first)] + parse(tokens[1:])
 
 def parse_and_expand(tokens):
-    return operator_expand(parse(tokens))
+    return expand_binary_operators(parse(tokens))
 
 def read(code):
     return parse_and_expand(lex(code))

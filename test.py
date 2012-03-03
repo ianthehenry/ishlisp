@@ -1,5 +1,5 @@
 import unittest
-from reader import lex, read, parse_forms, FormNode, BINARY_OPERATORS, PAIR_CDR_TOKEN, NumericLiteralNode, IdentifierNode, nil, operator_expand
+from reader import lex, read, parse_forms, FormNode, BINARY_OPERATORS, PAIR_CDR_TOKEN, NumericLiteralNode, IdentifierNode, nil, expand_binary_operators
 from evaluator import isheval, Pair, root, Scope
 from types import LambdaType, FunctionType
 
@@ -104,16 +104,20 @@ class Tests(unittest.TestCase):
 
     # read tests
 
-    def test_operator_expand(self):
+    def test_expand_binary_operators(self):
         self.assertEqual(
             [Forms(IdentifierNode('cons'), IdentifierNode('a'), IdentifierNode('b'))],
-            operator_expand([IdentifierNode('a'), BINARY_OPERATORS[':'], IdentifierNode('b')]))
+            expand_binary_operators([IdentifierNode('a'), BINARY_OPERATORS[':'], IdentifierNode('b')]))
         self.assertEqual(
             [IdentifierNode('x'), Forms(IdentifierNode('cons'), IdentifierNode('a'), IdentifierNode('b')), IdentifierNode('y')],
-            operator_expand([IdentifierNode('x'), IdentifierNode('a'), BINARY_OPERATORS[':'], IdentifierNode('b'), IdentifierNode('y')]))
+            expand_binary_operators([IdentifierNode('x'), IdentifierNode('a'), BINARY_OPERATORS[':'], IdentifierNode('b'), IdentifierNode('y')]))
         self.assertEqual(
             [Forms(IdentifierNode('cons'), IdentifierNode('a'), Forms(IdentifierNode('cons'), IdentifierNode('b'), IdentifierNode('c')))],
-            operator_expand([IdentifierNode('a'), BINARY_OPERATORS[':'], IdentifierNode('b'), BINARY_OPERATORS[':'], IdentifierNode('c')]))
+            expand_binary_operators([IdentifierNode('a'), BINARY_OPERATORS[':'], IdentifierNode('b'), BINARY_OPERATORS[':'], IdentifierNode('c')]))
+    def test_expand_binary_operators_precedence_and_associativity(self):
+        self.assertEqual(
+            read('(cons (get a b) (cons (get (get c d) e) f))'),
+            read('a.b:c.d.e:f'))
     def test_read_operator(self):
         self.assertEqual(
             Forms(IdentifierNode('cons'), IdentifierNode('a'), IdentifierNode('b')),

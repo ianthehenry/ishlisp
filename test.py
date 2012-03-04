@@ -171,16 +171,51 @@ class Tests(unittest.TestCase):
             [Forms(ValueNode('_cons', specials.cons), IdentifierNode('a'), Forms(ValueNode('_cons', specials.cons), IdentifierNode('b'), IdentifierNode('c')))],
             expand_binary_operators([IdentifierNode('a'), BINARY_OPERATORS[':'], IdentifierNode('b'), BINARY_OPERATORS[':'], IdentifierNode('c')]))
     def test_expand_binary_operators_precedence_and_associativity(self):
+        specials_dict = {
+            'get': specials.get,
+            'cons': specials.cons,
+            'list': specials.list_,
+            'pattern-with-predicate': specials.pattern_with_predicate,
+            'pattern-with-default': specials.pattern_with_default,
+        }
+        def special(name, *nodes):
+            return Forms(ValueNode('_%s' % name, specials_dict[name]), *nodes)
+
         self.assertEqual(
-            Forms(ValueNode('_cons', specials.cons), Forms(
-                ValueNode('_get', specials.get), IdentifierNode('a'), IdentifierNode('b')), Forms(
-                ValueNode('_cons', specials.cons), Forms(
-                    ValueNode('_get', specials.get), Forms(
-                        ValueNode('_get', specials.get), IdentifierNode('c'), IdentifierNode('d')),
-                        IdentifierNode('e')),
+            special('cons', special('get', IdentifierNode('a'), IdentifierNode('b')), special('cons',
+                special('get', special('get', IdentifierNode('c'), IdentifierNode('d')), IdentifierNode('e')),
                 IdentifierNode('f')
                 )),
             read_one('a.b:c.d.e:f'))
+        self.assertEqual(
+            special('pattern-with-predicate',
+                special('cons', IdentifierNode('a'), IdentifierNode('b')),
+                IdentifierNode('even?')),
+            read_one('a:b::even?'))
+        self.assertEqual(
+            special('pattern-with-default',
+                special('pattern-with-predicate',
+                    special('cons', IdentifierNode('a'), IdentifierNode('b')),
+                    IdentifierNode('even?')),
+                IdentifierNode('c')),
+            read_one('a:b::even? = c'))
+        self.assertEqual(
+            special('pattern-with-default',
+                special('pattern-with-predicate',
+                    special('pattern-with-predicate',
+                        special('cons', IdentifierNode('a'), IdentifierNode('b')),
+                        IdentifierNode('even?')),
+                    IdentifierNode('odd?')),
+                IdentifierNode('c')),
+            read_one('a:b::even?::odd? = c'))
+
+        self.assertEqual(
+            Forms(IdentifierNode('list'),
+                IdentifierNode('a'),
+                special('pattern-with-default',
+                    IdentifierNode('b'),
+                    IdentifierNode('c'))),
+            read_one('[a b = c]'))
     def test_read_operator(self):
         self.assertEqual(
             Forms(ValueNode('_cons', specials.cons), IdentifierNode('a'), IdentifierNode('b')),
@@ -314,7 +349,15 @@ class Tests(unittest.TestCase):
         self.assertFalse(pattern.match(isheval('[10 11 12]'), scope))
         self.assertFalse(pattern.match(isheval('nil'), scope))
 
-    def test_predicate_pattern(self):
+        pattern = isheval('(pattern nil)')
+        scope = Scope({}, None)
+        self.assertTrue(pattern.match(isheval('nil'), scope))
+        self.assertEqual(scope.identifiers(), set([]))
+        self.assertFalse(pattern.match(isheval('1'), scope))
+        self.assertFalse(pattern.match(isheval('1:2'), scope))
+        self.assertFalse(pattern.match(isheval('[1 2]'), scope))
+
+    def test_predicated_patterns(self):
         self.assertTrue(
             isheval('(pattern-with-predicate (pattern x) even?)') ==
             isheval('(pattern (pattern-with-predicate (pattern x) even?))') ==
@@ -324,6 +367,213 @@ class Tests(unittest.TestCase):
         )
         self.assertTrue(isheval('(match? (pattern x::even?) 10)'))
         self.assertFalse(isheval('(match? (pattern x::even?) 11)'))
+
+    def test_defaulted_patterns(self):
+        pattern = isheval('(pattern [a | b])')
+        scope = Scope({}, None)
+        self.assertTrue(pattern.match(isheval('1:2'), scope))
+        self.assertEqual(scope.identifiers(), set(['a', 'b']))
+        self.assertEqual(scope.get('a'), 1)
+        self.assertEqual(scope.get('b'), 2)
+        self.assertFalse(pattern.match(isheval('nil'), scope))
+
+        pattern = isheval('(pattern [a | b = 20])')
+        scope = Scope({}, None)
+        self.assertTrue(pattern.match(isheval('1:2'), scope))
+        self.assertEqual(scope.identifiers(), set(['a', 'b']))
+        self.assertEqual(scope.get('a'), 1)
+        self.assertEqual(scope.get('b'), 2)
+        self.assertFalse(pattern.match(isheval('1'), scope))
+        self.assertFalse(pattern.match(isheval('nil'), scope))
+
+        pattern = isheval('(pattern [a = 10 | b])')
+        scope = Scope({}, None)
+        self.assertTrue(pattern.match(isheval('1:2'), scope))
+        self.assertEqual(scope.identifiers(), set(['a', 'b']))
+        self.assertEqual(scope.get('a'), 1)
+        self.assertEqual(scope.get('b'), 2)
+        scope = Scope({}, None)
+        self.assertTrue(pattern.match(isheval('1:2'), scope))
+        self.assertEqual(scope.identifiers(), set(['a', 'b']))
+        self.assertEqual(scope.get('a'), 1)
+        self.assertEqual(scope.get('b'), 2)
+        self.assertFalse(pattern.match(isheval('1'), scope))
+        self.assertFalse(pattern.match(isheval('nil'), scope))
+
+        pattern = isheval('(pattern [a = 10 | b = 20])')
+        scope = Scope({}, None)
+        self.assertTrue(pattern.match(isheval('1:2'), scope))
+        self.assertEqual(scope.identifiers(), set(['a', 'b']))
+        self.assertEqual(scope.get('a'), 1)
+        self.assertEqual(scope.get('b'), 2)
+        scope = Scope({}, None)
+        self.assertFalse(pattern.match(isheval('1'), scope))
+        self.assertTrue(pattern.match(isheval('nil'), scope)) # this works because nil is considered the empty cons
+
+        pattern = isheval('(pattern [[a | b] | c])')
+        scope = Scope({}, None)
+        self.assertTrue(pattern.match(isheval('[1|2]:3'), scope))
+        self.assertEqual(scope.identifiers(), set(['a', 'b', 'c']))
+        self.assertEqual(scope.get('a'), 1)
+        self.assertEqual(scope.get('b'), 2)
+        self.assertEqual(scope.get('c'), 3)
+        self.assertFalse(pattern.match(isheval('[1|2]'), scope))
+        self.assertFalse(pattern.match(isheval('[1]'), scope))
+        self.assertFalse(pattern.match(isheval('[]'), scope))
+
+        pattern = isheval('(pattern [[a | b] c])')
+        scope = Scope({}, None)
+        self.assertTrue(pattern.match(isheval('[1:2 3]'), scope))
+        self.assertEqual(scope.identifiers(), set(['a', 'b', 'c']))
+        self.assertEqual(scope.get('a'), 1)
+        self.assertEqual(scope.get('b'), 2)
+        self.assertEqual(scope.get('c'), 3)
+        self.assertFalse(pattern.match(isheval('[1 3]'), scope))
+        self.assertFalse(pattern.match(isheval('[1]'), scope))
+        self.assertFalse(pattern.match(isheval('[]'), scope))
+
+        pattern = isheval('a::even? = 10')
+        scope = Scope({}, None)
+        self.assertTrue(pattern.match(isheval('7'), scope))
+        self.assertEqual(scope.identifiers(), set(['a']))
+        self.assertEqual(scope.get('a'), 10)
+        scope = Scope({}, None)
+        self.assertTrue(pattern.match(isheval('8'), scope))
+        self.assertEqual(scope.identifiers(), set(['a']))
+        self.assertEqual(scope.get('a'), 8)
+
+        pattern = isheval('(pattern [a b c = 30])')
+        scope = Scope({}, None)
+        self.assertTrue(pattern.match(isheval('[1 2 3]'), scope))
+        self.assertEqual(scope.identifiers(), set(['a', 'b', 'c']))
+        self.assertEqual(scope.get('a'), 1)
+        self.assertEqual(scope.get('b'), 2)
+        self.assertEqual(scope.get('c'), 3)
+        # scope = Scope({}, None)
+        # self.assertTrue(pattern.match(isheval('[1 2]'), scope))
+        # self.assertEqual(scope.identifiers(), set(['a', 'b', 'c']))
+        # self.assertEqual(scope.get('a'), 1)
+        # self.assertEqual(scope.get('b'), 2)
+        # self.assertEqual(scope.get('c'), 30)
+        # self.assertFalse(pattern.match(isheval('[1]'), scope))
+
+        # pattern = isheval('(pattern [a b = 20 c = 30])')
+        # scope = Scope({}, None)
+        # self.assertTrue(pattern.match(isheval('[1 2 3]'), scope))
+        # self.assertEqual(scope.identifiers(), set(['a', 'b', 'c']))
+        # self.assertEqual(scope.get('a'), 1)
+        # self.assertEqual(scope.get('b'), 2)
+        # self.assertEqual(scope.get('c'), 3)
+        # scope = Scope({}, None)
+        # self.assertTrue(pattern.match(isheval('[1 2]'), scope))
+        # self.assertEqual(scope.identifiers(), set(['a', 'b', 'c']))
+        # self.assertEqual(scope.get('a'), 1)
+        # self.assertEqual(scope.get('b'), 2)
+        # self.assertEqual(scope.get('c'), 30)
+        # scope = Scope({}, None)
+        # self.assertTrue(pattern.match(isheval('[1]'), scope))
+        # self.assertEqual(scope.identifiers(), set(['a', 'b', 'c']))
+        # self.assertEqual(scope.get('a'), 1)
+        # self.assertEqual(scope.get('b'), 20)
+        # self.assertEqual(scope.get('c'), 30)
+        # self.assertFalse(pattern.match(isheval('[]'), scope))
+
+        # pattern = isheval('(pattern [a = 10 b = 20 c = 30])')
+        # scope = Scope({}, None)
+        # self.assertTrue(pattern.match(isheval('[1 2 3]'), scope))
+        # self.assertEqual(scope.identifiers(), set(['a', 'b', 'c']))
+        # self.assertEqual(scope.get('a'), 1)
+        # self.assertEqual(scope.get('b'), 2)
+        # self.assertEqual(scope.get('c'), 3)
+        # scope = Scope({}, None)
+        # self.assertTrue(pattern.match(isheval('[1 2]'), scope))
+        # self.assertEqual(scope.identifiers(), set(['a', 'b', 'c']))
+        # self.assertEqual(scope.get('a'), 1)
+        # self.assertEqual(scope.get('b'), 2)
+        # self.assertEqual(scope.get('c'), 30)
+        # scope = Scope({}, None)
+        # self.assertTrue(pattern.match(isheval('[1]'), scope))
+        # self.assertEqual(scope.identifiers(), set(['a', 'b', 'c']))
+        # self.assertEqual(scope.get('a'), 1)
+        # self.assertEqual(scope.get('b'), 20)
+        # self.assertEqual(scope.get('c'), 30)
+        # scope = Scope({}, None)
+        # self.assertTrue(pattern.match(isheval('[]'), scope))
+        # self.assertEqual(scope.identifiers(), set(['a', 'b', 'c']))
+        # self.assertEqual(scope.get('a'), 10)
+        # self.assertEqual(scope.get('b'), 20)
+        # self.assertEqual(scope.get('c'), 30)
+        # self.assertFalse(pattern.match(isheval('10'), scope))
+
+        pattern = isheval('(pattern [a b = 20 nil])')
+        scope = Scope({}, None)
+        self.assertTrue(pattern.match(isheval('[1 2 nil]'), scope))
+        self.assertEqual(scope.identifiers(), set(['a', 'b']))
+        self.assertEqual(scope.get('a'), 1)
+        self.assertEqual(scope.get('b'), 2)
+
+        pattern = isheval('(pattern [a b = 20 | nil])')
+        scope = Scope({}, None)
+        self.assertTrue(pattern.match(isheval('[1 2]'), scope))
+        self.assertEqual(scope.identifiers(), set(['a', 'b']))
+        self.assertEqual(scope.get('a'), 1)
+        self.assertEqual(scope.get('b'), 2)
+
+        pattern = isheval('(pattern [a b = 20 nil:nil])')
+        scope = Scope({}, None)
+        self.assertTrue(pattern.match(isheval('[1 2 nil:nil]'), scope))
+        self.assertEqual(scope.identifiers(), set(['a', 'b']))
+        self.assertEqual(scope.get('a'), 1)
+        self.assertEqual(scope.get('b'), 2)
+
+        pattern = isheval('(pattern [a b = 20 | nil:nil])')
+        scope = Scope({}, None)
+        self.assertTrue(pattern.match(isheval('[1 2 nil]'), scope))
+        self.assertEqual(scope.identifiers(), set(['a', 'b']))
+        self.assertEqual(scope.get('a'), 1)
+        self.assertEqual(scope.get('b'), 2)
+
+        pattern = isheval('(pattern [a b = 20 c])')
+        scope = Scope({}, None)
+        self.assertTrue(pattern.match(isheval('[1 2 3]'), scope))
+        self.assertEqual(scope.identifiers(), set(['a', 'b', 'c']))
+        self.assertEqual(scope.get('a'), 1)
+        self.assertEqual(scope.get('b'), 2)
+        self.assertEqual(scope.get('c'), 3)
+        scope = Scope({}, None)
+        self.assertFalse(pattern.match(isheval('[1 2]'), scope))
+        self.assertFalse(pattern.match(isheval('[1]'), scope))
+        self.assertFalse(pattern.match(isheval('[]'), scope))
+
+        pattern = isheval('(pattern [a b = 20 | c = 30])')
+        scope = Scope({}, None)
+        self.assertTrue(pattern.match(isheval('[1 2 | 3]'), scope))
+        self.assertEqual(scope.identifiers(), set(['a', 'b', 'c']))
+        self.assertEqual(scope.get('a'), 1)
+        self.assertEqual(scope.get('b'), 2)
+        self.assertEqual(scope.get('c'), 3)
+        scope = Scope({}, None)
+        self.assertTrue(pattern.match(isheval('[1 2]'), scope))
+        self.assertEqual(scope.identifiers(), set(['a', 'b', 'c']))
+        self.assertEqual(scope.get('a'), 1)
+        self.assertEqual(scope.get('b'), 2)
+        self.assertEqual(scope.get('c'), nil)
+
+        pattern = isheval('(pattern [a b = 20 | c])')
+        scope = Scope({}, None)
+        self.assertTrue(pattern.match(isheval('[1 2 3]'), scope))
+        self.assertEqual(scope.identifiers(), set(['a', 'b', 'c']))
+        self.assertEqual(scope.get('a'), 1)
+        self.assertEqual(scope.get('b'), 2)
+        self.assertEqual(scope.get('c'), Pair(3, nil))
+        scope = Scope({}, None)
+        self.assertTrue(pattern.match(isheval('[1 2]'), scope))
+        self.assertEqual(scope.identifiers(), set(['a', 'b', 'c']))
+        self.assertEqual(scope.get('a'), 1)
+        self.assertEqual(scope.get('b'), 2)
+        self.assertEqual(scope.get('c'), nil)
+        self.assertFalse(pattern.match(isheval('[1]'), scope))
+        self.assertFalse(pattern.match(isheval('[]'), scope))
 
     def test_cons_pattern_match_list(self):
         pattern = isheval('(pattern [a b | c])')

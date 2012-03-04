@@ -108,19 +108,26 @@ def pattern_with_predicate(arg, scope):
     assert type(arg.cdr) is Pair
     assert eval_node(arg.cdr.cdr, scope) is nil
     base_pattern = pattern(arg.car, scope)
-    assert isinstance(base_pattern, Pattern)
 
     predicate_node = arg.cdr.car
     # if it's a FormNode, turn it into a mini function.
-    # if it's a not, evaluate it and:
-    #   if it's a Type, auto-add the instance? predicate
+    #   if it's a Type, its predicate is curryauto-add the instance? predicate
     #   if it's a function, use it as the predicate
-    # for now we will insist that it be a predicate
+    # for now we will insist that it be a predicate function
 
     predicate = eval_node(arg.cdr.car, scope)
     assert type(predicate) is FunctionType
 
     return PredicatedPattern(base_pattern, predicate)
+
+def pattern_with_default(arg, scope):
+    assert type(arg) is Pair
+    assert type(arg.cdr) is Pair
+    assert eval_node(arg.cdr.cdr, scope) is nil
+    base_pattern = pattern(arg.car, scope)
+    value_node = arg.cdr.car
+
+    return DefaultedPattern(base_pattern, eval_node(value_node, scope))
 
 def pattern(arg, scope):
     assert type(arg) is Pair or isinstance(arg, Node)
@@ -129,6 +136,10 @@ def pattern(arg, scope):
         arg = arg.car
 
     if type(arg) is IdentifierNode:
+        # TODO: we should probably parse `nil` as a ValueNode in the first place. This is kind of a hack to get some tests passing.
+        # Or should we insist you have `[]` to mean nil? Currently that isn't allowed.
+        if arg.identifier == 'nil':
+            return ValuePattern(nil, scope)
         return IdentifierPattern(arg, scope)
 
     if type(arg) is FormNode:
@@ -139,6 +150,8 @@ def pattern(arg, scope):
             return ConsPattern(arg.cdr, scope, True)
         elif car is pattern_with_predicate:
             return pattern_with_predicate(arg.cdr, scope)
+        elif car is pattern_with_default:
+            return pattern_with_default(arg.cdr, scope)
         elif car is pattern:
             return pattern(arg.cdr, scope)
         else:

@@ -53,6 +53,7 @@ root = Scope({
     'fn': specials.fn,
     'pattern': specials.pattern,
     'pattern-with-predicate': specials.pattern_with_predicate,
+    'pattern-with-default': specials.pattern_with_default,
     'match?': specials.match,
     'call': specials.call,
     'apply': specials.apply,

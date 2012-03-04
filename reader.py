@@ -236,7 +236,8 @@ def read(code):
 import specials
 
 BINARY_OPERATORS = {
-    ':': BinaryOperatorNode(':', ValueNode('_cons', specials.cons), 3, 'right'),
-    '.': BinaryOperatorNode('.', ValueNode('_get', specials.get), 2, 'left'),
-    '::': BinaryOperatorNode('::', IdentifierNode('pattern-with-predicate'), 1, 'left'), # ValueNode('_pattern-with-predicate', specials.pattern_with_predicate)
+    ':': BinaryOperatorNode(':', ValueNode('_cons', specials.cons), 2, 'right'),
+    '.': BinaryOperatorNode('.', ValueNode('_get', specials.get), 1, 'left'),
+    '::': BinaryOperatorNode('::', ValueNode('_pattern-with-predicate', specials.pattern_with_predicate), 3, 'left'),
+    '=': BinaryOperatorNode('=', ValueNode('_pattern-with-default', specials.pattern_with_default), 3, 'left'),
 }

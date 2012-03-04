@@ -398,9 +398,15 @@ class Tests(unittest.TestCase):
         self._test_pattern('(pattern [a = 10 | b = 20])', 'nil', {'a': 10, 'b': nil})
         self._test_pattern_fails('(pattern [a = 10 | b = 20])', '1')
 
-        # I want this pattern on the left of a cons -- [a = 10 | b = 20]:c
-        # to see what happens when nil is passed in there. It should be
-        # a:10, b:20, c:nil, if my calculations are correct
+        self._test_pattern('(pattern [a = 10 | b = 20]:c)', '[1 | 2]:3', {'a': 1, 'b': 2, 'c': 3})
+        self._test_pattern('(pattern [a = 10 | b = 20]:c)', 'nil', {'a': 10, 'b': 20, 'c': nil})
+
+        self._test_pattern('(pattern [a b]:c)', '[1 2]:nil', {'a': 1, 'b': 2, 'c': nil})
+        self._test_pattern_fails('(pattern [a = 10 b = 20]:c)', 'nil')
+        # This is a little weird when you think of it as a list, but if you think of it as a ConsPattern
+        # whose cdr_pattern is a ConsPattern then this does make sense.
+        self._test_pattern('(pattern [a = 10 b = 20 | c = 30]:d)', 'nil', {'a': 10, 'b': 20, 'c': 30, 'd': nil})
+        self._test_pattern('(pattern [a b]:c)', '[1 2]:nil', {'a': 1, 'b': 2, 'c': nil})
 
         self._test_pattern('(pattern [[a | b] | c])', '[1|2]:3', {'a': 1, 'b': 2, 'c': 3})
         self._test_pattern_fails('(pattern [[a | b] | c])', '[1|2]')

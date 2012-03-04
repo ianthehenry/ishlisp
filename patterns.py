@@ -51,8 +51,8 @@ class ConsPattern(Pattern):
         else:
             self.cdr_pattern = specials.pattern(pair.cdr, scope)
     def match(self, target, scope):
-        if target is nil:
-            return self.car_pattern.match(None, scope) and self.cdr_pattern.match(nil, scope)
+        if target is nil or target is None:
+            return self.car_pattern.match(None, scope) and self.cdr_pattern.match(target, scope)
         if type(target) is not Pair:
             return False
         return self.car_pattern.match(target.car, scope) and self.cdr_pattern.match(target.cdr, scope)

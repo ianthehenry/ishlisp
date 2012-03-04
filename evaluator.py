@@ -52,10 +52,13 @@ root = Scope({
     'cdr': specials.cdr,
     'fn': specials.fn,
     'pattern': specials.pattern,
-    'match': specials.match,
+    'pattern-with-predicate': specials.pattern_with_predicate,
+    'match?': specials.match,
     'call': specials.call,
     'apply': specials.apply,
     'curry': specials.curry,
+    'even?': specials.even,
+    'odd?': specials.odd,
     'nil': nil
 }, None)
 

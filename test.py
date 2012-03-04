@@ -124,6 +124,9 @@ class Tests(unittest.TestCase):
         self.assertEqual(1, isheval('(apply car [[1 2]])'))
         self.assertEqual(Pair(1, Pair(2, nil)), isheval('((curry list 1) 2)'))
 
+    def test_builtin_match(self):
+        self.assertEqual(True, isheval('(match? (pattern x) 10)'))
+
     def test_curry_only_evaluates_arguments_once(self):
         count = 0
         def increment_count(args, scope):
@@ -310,6 +313,18 @@ class Tests(unittest.TestCase):
         self.assertEqual(scope.get('b'), 7)
         self.assertFalse(pattern.match(isheval('[10 11 12]'), scope))
         self.assertFalse(pattern.match(isheval('nil'), scope))
+
+    def test_predicate_pattern(self):
+        self.assertTrue(
+            isheval('(pattern-with-predicate (pattern x) even?)') ==
+            isheval('(pattern (pattern-with-predicate (pattern x) even?))') ==
+            isheval('(pattern x)::even?') ==
+            isheval('(pattern-with-predicate x even?)') ==
+            isheval('(pattern x::even?)')
+        )
+        self.assertTrue(isheval('(match? (pattern x::even?) 10)'))
+        self.assertFalse(isheval('(match? (pattern x::even?) 11)'))
+
     def test_cons_pattern_match_list(self):
         pattern = isheval('(pattern [a b | c])')
         scope = Scope({}, None)

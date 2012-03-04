@@ -12,6 +12,16 @@ def cons(arg, scope):
     cdr = arg.cdr.car
     return Pair(eval_node(car, scope), eval_node(cdr, scope))
 
+def even(arg, scope):
+    assert type(arg) is Pair
+    assert eval_node(arg.cdr, scope) is nil
+    arg = eval_node(arg.car, scope)
+    assert type(arg) is int
+    return arg % 2 == 0
+
+def odd(arg, scope):
+    return not even(arg, scope)
+
 def id(arg, scope):
     return eval_node(arg, scope)
 
@@ -85,7 +95,32 @@ def fn(declaration, outer_scope):
     return lambduh
 
 def match(arg, scope):
-    raise Exception("not yet implemented")
+    assert type(arg) is Pair
+    assert type(arg.cdr) is Pair
+    assert eval_node(arg.cdr.cdr, scope) is nil
+    pattern = eval_node(arg.car, scope)
+    target = eval_node(arg.cdr.car, scope)
+    new_scope = Scope({}, scope)
+    return pattern.match(target, new_scope)
+
+def pattern_with_predicate(arg, scope):
+    assert type(arg) is Pair
+    assert type(arg.cdr) is Pair
+    assert eval_node(arg.cdr.cdr, scope) is nil
+    base_pattern = pattern(arg.car, scope)
+    assert isinstance(base_pattern, Pattern)
+
+    predicate_node = arg.cdr.car
+    # if it's a FormNode, turn it into a mini function.
+    # if it's a not, evaluate it and:
+    #   if it's a Type, auto-add the instance? predicate
+    #   if it's a function, use it as the predicate
+    # for now we will insist that it be a predicate
+
+    predicate = eval_node(arg.cdr.car, scope)
+    assert type(predicate) is FunctionType
+
+    return PredicatedPattern(base_pattern, predicate)
 
 def pattern(arg, scope):
     assert type(arg) is Pair or isinstance(arg, Node)
@@ -102,6 +137,10 @@ def pattern(arg, scope):
             return ConsPattern(arg.cdr, scope)
         elif car is list_:
             return ConsPattern(arg.cdr, scope, True)
+        elif car is pattern_with_predicate:
+            return pattern_with_predicate(arg.cdr, scope)
+        elif car is pattern:
+            return pattern(arg.cdr, scope)
         else:
             raise Exception("unrecognized special form in pattern")
     return ValuePattern(arg, scope)
@@ -110,3 +149,4 @@ from core import Pair, nil
 from reader import FormNode, IdentifierNode, ValueNode
 from evaluator import eval_node, Scope
 from patterns import *
+from types import FunctionType

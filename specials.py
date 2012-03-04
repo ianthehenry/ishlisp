@@ -130,16 +130,14 @@ def pattern_with_default(arg, scope):
     return DefaultedPattern(base_pattern, eval_node(value_node, scope))
 
 def pattern(arg, scope):
-    assert type(arg) is Pair or isinstance(arg, Node)
+    assert arg is nil or type(arg) is Pair or isinstance(arg, Node)
 
+    if arg is nil:
+        return ValuePattern(nil, scope)
     if type(arg) is Pair:
         arg = arg.car
 
     if type(arg) is IdentifierNode:
-        # TODO: we should probably parse `nil` as a ValueNode in the first place. This is kind of a hack to get some tests passing.
-        # Or should we insist you have `[]` to mean nil? Currently that isn't allowed.
-        if arg.identifier == 'nil':
-            return ValuePattern(nil, scope)
         return IdentifierPattern(arg, scope)
 
     if type(arg) is FormNode:

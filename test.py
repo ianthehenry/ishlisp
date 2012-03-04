@@ -331,6 +331,9 @@ class Tests(unittest.TestCase):
 
     # pattern tests
 
+    def test_pattern_allows_empty_square_brackets_as_nil(self):
+        self._test_pattern('(pattern [])', 'nil', {})
+
     def test_identifier_pattern_match(self):
         self._test_pattern('(pattern a)', '10', {'a': 10})
         self._test_pattern('(pattern a)', 'nil', {'a': nil})
@@ -350,11 +353,11 @@ class Tests(unittest.TestCase):
         self._test_pattern_fails('(pattern [a 5 b])', '[10 11 12]')
         self._test_pattern_fails('(pattern [a 5 b])', 'nil')
 
-        self._test_pattern('(pattern nil)', 'nil', {})
-        self._test_pattern_fails('(pattern nil)', '1')
-        self._test_pattern_fails('(pattern nil)', '1:2')
-        self._test_pattern_fails('(pattern nil)', '[1 2]')
-        self._test_pattern_fails('(pattern nil)', 'nil:nil')
+        self._test_pattern('(pattern [])', 'nil', {})
+        self._test_pattern_fails('(pattern [])', '1')
+        self._test_pattern_fails('(pattern [])', '1:2')
+        self._test_pattern_fails('(pattern [])', '[1 2]')
+        self._test_pattern_fails('(pattern [])', 'nil:nil')
 
     def test_predicated_patterns(self):
         self.assertTrue(
@@ -435,14 +438,14 @@ class Tests(unittest.TestCase):
         self._test_pattern('(pattern [a = 10 b = 20 c = 30])', 'nil', {'a': 10, 'b': 20, 'c': 30})
         self._test_pattern_fails('(pattern [a = 10 b = 20 c = 30])', '1')
 
-        self._test_pattern('(pattern [a b = 20 nil:nil])', '[1 2 nil:nil]', {'a': 1, 'b': 2})
-        self._test_pattern_fails('(pattern [a b = 20 nil:nil])', '[1]')
-        self._test_pattern_fails('(pattern [a b = 20 nil:nil])', '[1 2 nil]')
+        self._test_pattern('(pattern [a b = 20 []:[]])', '[1 2 nil:nil]', {'a': 1, 'b': 2})
+        self._test_pattern_fails('(pattern [a b = 20 []:[]])', '[1]')
+        self._test_pattern_fails('(pattern [a b = 20 []:[]])', '[1 2 nil]')
 
-        self._test_pattern('(pattern [a b = 20 | nil:nil])', '[1 2 | nil:nil]', {'a': 1, 'b': 2})
-        self._test_pattern('(pattern [a b = 20 | nil:nil])', '[1 2 nil]', {'a': 1, 'b': 2})
-        self._test_pattern_fails('(pattern [a b = 20 | nil:nil])', '[1]')
-        self._test_pattern_fails('(pattern [a b = 20 | nil:nil])', '[1 nil]')
+        self._test_pattern('(pattern [a b = 20 | []:[]])', '[1 2 | nil:nil]', {'a': 1, 'b': 2})
+        self._test_pattern('(pattern [a b = 20 | []:[]])', '[1 2 nil]', {'a': 1, 'b': 2})
+        self._test_pattern_fails('(pattern [a b = 20 | []:[]])', '[1]')
+        self._test_pattern_fails('(pattern [a b = 20 | []:[]])', '[1 nil]')
 
         self._test_pattern('(pattern [a b = 20 c])', '[1 2 3]', {'a': 1, 'b': 2, 'c': 3})
         self._test_pattern('(pattern [a b = 20 c])', '[1 2 nil]', {'a': 1, 'b': 2, 'c': nil})
@@ -474,15 +477,15 @@ class Tests(unittest.TestCase):
         self._test_pattern_fails('(pattern [a b = 20 | 3])', '[1]')
         self._test_pattern_fails('(pattern [a b = 20 | 3])', 'nil')
 
-        self._test_pattern('(pattern [a b = 20 nil])', '[1 2 nil]', {'a': 1, 'b': 2})
-        self._test_pattern('(pattern [a b = 20 nil])', '[1 nil nil]', {'a': 1, 'b': nil})
-        self._test_pattern_fails('(pattern [a b = 20 nil])', '[1 nil]')
-        self._test_pattern_fails('(pattern [a b = 20 nil])', '[1]')
-        self._test_pattern_fails('(pattern [a b = 20 nil])', 'nil')
+        self._test_pattern('(pattern [a b = 20 [])', '[1 2 nil]', {'a': 1, 'b': 2})
+        self._test_pattern('(pattern [a b = 20 []])', '[1 nil nil]', {'a': 1, 'b': nil})
+        self._test_pattern_fails('(pattern [a b = 20 []])', '[1 nil]')
+        self._test_pattern_fails('(pattern [a b = 20 []])', '[1]')
+        self._test_pattern_fails('(pattern [a b = 20 []])', 'nil')
 
-        self._test_pattern('(pattern [a b = 20 | nil])', '[1 2]', {'a': 1, 'b': 2})
-        self._test_pattern('(pattern [a b = 20 | nil])', '[1]', {'a': 1, 'b': 20})
-        self._test_pattern_fails('(pattern [a b = 20 | nil])', '[1 2 nil]')
+        self._test_pattern('(pattern [a b = 20 | []])', '[1 2]', {'a': 1, 'b': 2})
+        self._test_pattern('(pattern [a b = 20 | []])', '[1]', {'a': 1, 'b': 20})
+        self._test_pattern_fails('(pattern [a b = 20 | []])', '[1 2 nil]')
 
     def test_cons_pattern_match_list(self):
         self._test_pattern('(pattern [a b | c])', '[1 2 | 3]', {'a': 1, 'b': 2, 'c': 3})
@@ -496,14 +499,14 @@ class Tests(unittest.TestCase):
         self._test_pattern_fails('(pattern [a b c])', '[1]')
         self._test_pattern_fails('(pattern [a b c])', 'nil')
 
-        self._test_pattern('(pattern nil:nil)', 'nil:nil', {})
-        self._test_pattern_fails('(pattern nil:nil)', 'nil')
+        self._test_pattern('(pattern []:[])', 'nil:nil', {})
+        self._test_pattern_fails('(pattern []:[])', 'nil')
 
-        self._test_pattern('(pattern nil:nil:nil:nil)', 'nil:nil:nil:nil', {})
-        self._test_pattern_fails('(pattern nil:nil:nil:nil)', 'nil')
+        self._test_pattern('(pattern []:[]:[]:[])', 'nil:nil:nil:nil', {})
+        self._test_pattern_fails('(pattern []:[]:[]:[])', 'nil')
 
-        self._test_pattern('(pattern nil:a)', 'nil:1', {'a': 1})
-        self._test_pattern_fails('(pattern nil:a)', 'nil')
+        self._test_pattern('(pattern []:a)', 'nil:1', {'a': 1})
+        self._test_pattern_fails('(pattern []:a)', 'nil')
 
         self._test_pattern('(pattern a:b)', '1:2', {'a': 1, 'b': 2})
         self._test_pattern('(pattern a:b)', '[1 | 2]', {'a': 1, 'b': 2})

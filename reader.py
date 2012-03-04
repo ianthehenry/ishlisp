@@ -35,7 +35,7 @@ def parse_forms(lst, is_form_node = True):
     constructor = FormNode if is_form_node else Pair
 
     if type(lst) is not tuple:
-        assert isinstance(lst, Node)
+        assert lst is nil or isinstance(lst, Node)
         return lst
     if len(lst) == 0:
         return nil

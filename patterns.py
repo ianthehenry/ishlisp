@@ -42,7 +42,6 @@ def rec_pattern(arg, scope):
             return specials.pattern(arg, scope)
 
 # The recursive thing is just a convenience so that (list 1 2) will expand to multiple ConsPatterns.
-# We could just make a ListPattern, but it's not necessary.
 class ConsPattern(Pattern):
     def __init__(self, pair, scope, recursive = False):
         assert type(pair) is Pair

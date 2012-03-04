@@ -53,7 +53,7 @@ class ConsPattern(Pattern):
             self.cdr_pattern = specials.pattern(pair.cdr, scope)
     def match(self, target, scope):
         if target is nil:
-            return (self.car_pattern.match(None, scope) and self.cdr_pattern.match(None, scope))
+            return self.car_pattern.match(None, scope) and self.cdr_pattern.match(nil, scope)
         if type(target) is not Pair:
             return False
         return self.car_pattern.match(target.car, scope) and self.cdr_pattern.match(target.cdr, scope)
@@ -116,6 +116,9 @@ class DefaultedPattern(IdentifierPattern):
             # cause some unexpected behavior. This we cannot avoid -- the programmer simply needs
             # to be aware of it. Or we could re-evaluate in a special "don't care about predicates"
             # mode when we apply default values. That...that's actually a really good idea.
+            # Actually, it's not. Patterns could, in theory, have to perform backtracking in order
+            # to determined whether or not they match. So...just be aware that predicates may be
+            # evaluated more than once over the course of a single pattern match.
             return self.pattern.match(target, scope) or self.pattern.match(self.default_value, scope)
     def __repr__(self):
         return "(DefaultedPattern %s %s)" % (repr(self.pattern), repr(self.default_value))

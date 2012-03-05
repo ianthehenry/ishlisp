@@ -33,7 +33,7 @@ class Tests(unittest.TestCase):
     # repr tests
 
     def test_list_repr_empty_lists_are_nil(self):
-        self.assertEqual('nil', repr(read_one('[]')))
+        self.assertEqual('_nil', repr(read_one('[]')))
     def test_form_node_repr(self):
         self._repr_is_homoiconic('(a)')
         self._repr_is_homoiconic('(a | b)')
@@ -226,7 +226,7 @@ class Tests(unittest.TestCase):
             read_one('a:b::even?::odd? = c'))
 
         self.assertEqual(
-            Forms(IdentifierNode('list'),
+            Forms(ValueNode('_list', specials.list_),
                 IdentifierNode('a'),
                 special('pattern-with-default',
                     IdentifierNode('b'),
@@ -264,11 +264,11 @@ class Tests(unittest.TestCase):
             read_one('(a b)'))
     def test_read_square_brackets_converts_to_list_special_form(self):
         self.assertEqual(
-            Forms(IdentifierNode('list'), IdentifierNode('a'), IdentifierNode('b')),
+            Forms(ValueNode('_list', specials.list_), IdentifierNode('a'), IdentifierNode('b')),
             read_one('[a b]'))
     def test_read_square_brackets_with_cdr_converts_to_list_special_form(self):
         self.assertEqual(
-            FormNode(IdentifierNode('list'), Pair(IdentifierNode('a'), IdentifierNode('b'))),
+            FormNode(ValueNode('_list', specials.list_), Pair(IdentifierNode('a'), IdentifierNode('b'))),
             read_one('[a | b]'))
     def test_read_square_brackets_must_have_cdr(self):
         self.assertRaises(Exception, lambda: read('[a |]'))
@@ -293,11 +293,11 @@ class Tests(unittest.TestCase):
                 Pair(NumericLiteralNode('1'), Pair(NumericLiteralNode('2'), nil)))),
             read_one('(id | (add 1 2)'))
         self.assertEqual(
-            FormNode(IdentifierNode('id'), FormNode(IdentifierNode('list'),
+            FormNode(IdentifierNode('id'), FormNode(ValueNode('_list', specials.list_),
                 Pair(NumericLiteralNode('1'), Pair(NumericLiteralNode('2'), nil)))),
             read_one('(id | [1 2])'))
         self.assertEqual(
-            FormNode(IdentifierNode('id'), FormNode(IdentifierNode('list'),
+            FormNode(IdentifierNode('id'), FormNode(ValueNode('_list', specials.list_),
                 Pair(NumericLiteralNode('1'), NumericLiteralNode('2')))),
             read_one('(id | [1 | 2])'))
         self.assertEqual(
@@ -312,14 +312,14 @@ class Tests(unittest.TestCase):
 
         self.assertEqual(
             Forms(IdentifierNode('print'),
-                FormNode(IdentifierNode('list'), Pair(NumericLiteralNode('7'), NumericLiteralNode('8')))),
+                FormNode(ValueNode('_list', specials.list_), Pair(NumericLiteralNode('7'), NumericLiteralNode('8')))),
             read_one('(print [7 | 8])'))
 
         self.assertEqual(
             Forms(
                 IdentifierNode('print'),
                 Forms(
-                    IdentifierNode('list'),
+                    ValueNode('_list', specials.list_),
                     Forms(
                         IdentifierNode('add'),
                         NumericLiteralNode('10'),

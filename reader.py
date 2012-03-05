@@ -159,8 +159,10 @@ def parse_single_token(token):
     return IdentifierNode(token)
 
 matched_tokens = {
-    '(': (')', lambda *sexp: parse_forms(sexp), lambda: nil), # this should actually throw an exception, but i'm allowing it for now...makes sense if nil can be used as a function
-    '[': (']', lambda *sexp: FormNode(IdentifierNode('list'), parse_forms(sexp, False)), lambda: nil)
+    '(': (')', lambda *sexp: parse_forms(sexp), lambda: ValueNode('_nil', nil)), # this should actually throw an exception, but i'm allowing it for now...makes sense if nil can be used as a function
+    '[': (']',
+        lambda *sexp: FormNode(ValueNode('_list', specials.list_), parse_forms(sexp, False)),
+        lambda: ValueNode('_nil', nil))
 }
 
 def reverse_iterator(items):

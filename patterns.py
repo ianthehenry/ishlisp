@@ -83,49 +83,14 @@ class PredicatedPattern(Pattern):
 
 class DefaultedPattern(IdentifierPattern):
     def __init__(self, pattern, default_value):
+        assert isinstance(pattern, Pattern)
         self.pattern = pattern
-
-        # Basically, it only makes sense to apply a default value to an identifier pattern or a
-        # predicated identifier pattern (or a predicated predicated identifier pattern, etc).
-        # We don't *need* to assert this, but it doesn't hurt.
-        # Actually, it might be kind of convenient. Consider `[a b c]=[1 2 3]`. If any part of that
-        # match fails, `a`, `b`, and `c` are still bound. It's similar to `[a=1 b=2 c=3]`, except
-        # that it will still succeed even if the thing passed is not a list at all, or has more
-        # than three elements. I guess it's more like `[a=1 b=2 c=3 | -]`, but still not the same.
-        if type(self.pattern) is not IdentifierPattern:
-            p = self.pattern
-            while type(p) is not IdentifierPattern:
-                assert type(p) is PredicatedPattern, "it doesn't make any sense to apply a default value to that. what's wrong with you?"
-                p = p.pattern
         self.default_value = default_value
-
         scope = Scope({}, None)
-        # TODO: performing this sanity check is potentially dangerous. What if self.pattern is a PredicatedPattern
-        # whose predicate has side-effects? Then it would be invoked once. Right now I think it's okay to just
-        # document this behavior, but in the future this should be removed.
-        # In fact, this *can't* work, since the pattern may be a predicated pattern whose predicate relies on a
-        # value bound previously in the course of the matching. So there.
-        assert self.pattern.match(self.default_value, scope), "you can't set a default that doesn't match the pattern itself"
-
     def match(self, target, scope):
         if target is None:
             return self.pattern.match(self.default_value, scope)
         else:
-            # TODO: Re-matching the pattern like this may have some weird effects.
-            # Say you have `[a [b::(gt b a) a c]=[10 20 30]]` matching against `[1 [2 100]]`.
-            # On the first check, `b` succeeds (`a` is 1 and `b` is 2) and is bound to 2. Then
-            # `a` is rebound to 20.
-            # Potential solutions:
-            #   - Buffer any changes made by the first check and only apply them if the match succeeds.
-            #   - Don't allow rebinding of a name within a pattern match.
-            #   - Document this.
-            # Also, if there are predicates with side-effects that get re-evaluated, that might
-            # cause some unexpected behavior. This we cannot avoid -- the programmer simply needs
-            # to be aware of it. Or we could re-evaluate in a special "don't care about predicates"
-            # mode when we apply default values. That...that's actually a really good idea.
-            # Actually, it's not. Patterns could, in theory, have to perform backtracking in order
-            # to determined whether or not they match. So...just be aware that predicates may be
-            # evaluated more than once over the course of a single pattern match.
             return self.pattern.match(target, scope) or self.pattern.match(self.default_value, scope)
     def __repr__(self):
         return "(DefaultedPattern %s %s)" % (repr(self.pattern), repr(self.default_value))

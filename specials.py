@@ -77,22 +77,11 @@ def list_(arg, scope):
 def get(arg, scope):
     raise Exception("not yet implemented")
 
+# TODO: it might be nice to allow keyword args that attached metadata to a function. maybe?
 def fn(declaration, outer_scope):
     param_pattern = pattern(declaration.car, outer_scope)
     assert type(declaration.cdr) is Pair
-
-    def lambduh(arg, invoking_scope):
-        forms = declaration.cdr
-        inner_scope = Scope({}, outer_scope)
-        evaled_arg = eval_node(arg, invoking_scope)
-        if not param_pattern.match(evaled_arg, inner_scope):
-            raise Exception("pattern did not match. pattern: '%s' actual: '%s'" % (repr(param_pattern), repr(evaled_arg)))
-        return_value = nil
-        while forms is not nil:
-            return_value = eval_node(forms.car, inner_scope)
-            forms = forms.cdr
-        return return_value
-    return lambduh
+    return Function(param_pattern, declaration.cdr, outer_scope)
 
 def match(arg, scope):
     assert type(arg) is Pair
@@ -158,6 +147,6 @@ def pattern(arg, scope):
 
 from core import Pair, nil
 from reader import FormNode, IdentifierNode, ValueNode
-from evaluator import eval_node, Scope
+from evaluator import eval_node, Scope, Function
 from patterns import *
 from types import FunctionType

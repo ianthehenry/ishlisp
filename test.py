@@ -1,6 +1,6 @@
 import unittest
 from reader import lex, read, parse_forms, FormNode, BINARY_OPERATORS, PAIR_CDR_TOKEN, NumericLiteralNode, IdentifierNode, nil, expand_binary_operators, ValueNode
-from evaluator import isheval, Pair, root, Scope
+from evaluator import isheval, Pair, root, Scope, Function
 from types import LambdaType, FunctionType
 import specials
 
@@ -85,6 +85,9 @@ class Tests(unittest.TestCase):
         self.assertEqual(Pair(5, nil), isheval('((fn x x) (add 2 3))'))
         self.assertEqual(30, isheval('((fn x (add 10 (car x))) 20)'))
         self.assertRaises(Exception, isheval, '((add 1 2))')
+    def test_functions_bind_hyphen(self):
+        self.assertEqual(10, isheval('((fn [x] (add x (car -))) 5)'))
+        self.assertEqual(12, isheval('((fn [x] (add 3 4) (add x -)) 5)'))
     def test_eval_functions_in_scope(self):
         my_id = isheval('(fn x x)')
         scope = Scope({'my_id': my_id}, root)
@@ -96,7 +99,7 @@ class Tests(unittest.TestCase):
         self.assertEqual(Pair(20, nil), isheval('(my_id 20)', scope))
     def test_eval_nested_functions(self):
         compose = isheval('(fn x (fn y ((car (cdr x)) | ((car x) | y))))')
-        self.assertEqual(LambdaType, type(compose))
+        self.assertEqual(Function, type(compose))
         scope = Scope({'compose': compose}, root)
         self.assertEqual(compose, isheval('compose', scope))
         self.assertEqual(10, isheval('((compose id id) | 10)', scope))
@@ -124,7 +127,7 @@ class Tests(unittest.TestCase):
                     (fn1 (fn2 arg))
                 )
             )''')
-        self.assertEqual(FunctionType, type(unary_compose))
+        self.assertEqual(Function, type(unary_compose))
         scope = Scope({'unary_compose': unary_compose}, root)
         cadr = isheval('(unary_compose car cdr)', scope)
         scope.set('cadr', cadr)

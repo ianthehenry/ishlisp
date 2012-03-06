@@ -17,6 +17,8 @@ class IdentifierPattern(Pattern):
         return True
     def __repr__(self):
         return "(IdentifierPattern %s)" % self.identifier
+    def nice_repr(self):
+        return repr(self)
     def __eq__(self, other):
         return type(other) is IdentifierPattern and self.identifier == other.identifier
 
@@ -28,6 +30,8 @@ class ValuePattern(Pattern):
         return self.value == target
     def __repr__(self):
         return "(ValuePattern %s)" % repr(self.value)
+    def nice_repr(self):
+        return repr(self)
     def __eq__(self, other):
         return type(other) is ValuePattern and self.value == other.value
 
@@ -58,6 +62,8 @@ class ConsPattern(Pattern):
         return self.car_pattern.match(target.car, scope) and self.cdr_pattern.match(target.cdr, scope)
     def __repr__(self):
         return "(ConsPattern %s %s)" % (repr(self.car_pattern), repr(self.cdr_pattern))
+    def nice_repr(self):
+        return repr(self)
     def __eq__(self, other):
         return type(other) is ConsPattern and self.car_pattern == other.car_pattern and self.cdr_pattern == other.cdr_pattern
 
@@ -66,10 +72,12 @@ class PredicatedPattern(Pattern):
         self.pattern = pattern
         assert type(self.pattern) is not DefaultedPattern, "you can't apply a predicate to a defaulted pattern. it just doesn't make sense."
         self.predicate = predicate
-    def __repr__(self):
-        return "(PredicatedPattern %s %s)" % (repr(self.pattern), repr(self.predicate))
     def match(self, target, scope):
         return self.pattern.match(target, scope) and self.predicate(Pair(target, nil), None) is True
+    def __repr__(self):
+        return "(PredicatedPattern %s %s)" % (repr(self.pattern), repr(self.predicate))
+    def nice_repr(self):
+        return repr(self)
     def __eq__(self, other):
         return type(other) is PredicatedPattern and self.pattern == other.pattern and self.predicate == other.predicate
 
@@ -121,5 +129,7 @@ class DefaultedPattern(IdentifierPattern):
             return self.pattern.match(target, scope) or self.pattern.match(self.default_value, scope)
     def __repr__(self):
         return "(DefaultedPattern %s %s)" % (repr(self.pattern), repr(self.default_value))
+    def nice_repr(self):
+        return repr(self)
     def __eq__(self, other):
         return type(other) is DefaultedPattern and self.pattern == other.pattern and self.default_value == other.default_value

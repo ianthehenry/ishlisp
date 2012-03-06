@@ -19,6 +19,29 @@ class Scope:
     def identifiers(self):
         return self.dict.keys()
 
+class Function:
+    def __init__(self, pattern, forms, scope):
+        assert isinstance(pattern, Pattern)
+        assert isinstance(scope, Scope)
+        assert isinstance(forms, Pair)
+        self.pattern = pattern
+        self.forms = forms
+        self.scope = scope
+    def __repr__(self):
+        return "(fn %s %s)" % (self.pattern.nice_repr(), repr(self.forms))
+    def call(self, arg, invoking_scope):
+        new_scope = Scope({}, self.scope)
+        evaled_arg = eval_node(arg, invoking_scope)
+        if not self.pattern.match(evaled_arg, new_scope):
+            raise Exception("pattern did not match. pattern: '%s' actual: '%s'" % (repr(param_pattern), repr(evaled_arg)))
+        val = evaled_arg
+        forms = self.forms
+        while forms is not nil:
+            new_scope.set('-', val)
+            val = eval_node(forms.car, new_scope)
+            forms = forms.cdr
+        return val
+
 def eval_node(node, scope):
     if type(node) is Pair:
         return Pair(eval_node(node.car, scope), eval_node(node.cdr, scope))
@@ -30,8 +53,10 @@ def eval_node(node, scope):
 
     if type(node) is FormNode:
         fn = eval_node(node.car, scope)
-        assert type(fn) is FunctionType
-        return fn(node.cdr, scope)
+        if type(fn) is FunctionType:
+            return fn(node.cdr, scope)
+        else:
+            return fn.call(node.cdr, scope)
     elif type(node) is IdentifierNode:
         return scope.get(node.identifier)
     elif type(node) is NumericLiteralNode:
@@ -68,3 +93,5 @@ def isheval(code, scope = root):
     for node in read(code):
         ret_value = eval_node(node, scope)
     return ret_value
+
+from patterns import Pattern

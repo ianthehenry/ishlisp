@@ -30,6 +30,22 @@ class Tests(unittest.TestCase):
         for key in expected_scope:
             self.assertEqual(expected_scope[key], scope.get(key))
 
+    def test_scope(self):
+        parent = Scope({}, None)
+        parent.set('foo', 10)
+        parent.set('bar', 20)
+
+        child = Scope({}, parent)
+        child.set('foo', 15)
+        self.assertTrue(child.set_recursive('bar', 25))
+
+        self.assertEqual(10, parent.get('foo'))
+        self.assertEqual(25, parent.get('bar'))
+        self.assertEqual(15, child.get('foo'))
+        self.assertEqual(25, parent.get('bar'))
+        self.assertRaises(Exception, child.get, 'baz')
+
+
     # repr tests
 
     def test_list_repr_empty_lists_are_nil(self):
@@ -526,5 +542,17 @@ class Tests(unittest.TestCase):
         self._test_pattern('(pattern a:b:c)', '[1 2 3]', {'a': 1, 'b': 2, 'c': Pair(3, nil)})
         self._test_pattern_fails('(pattern a:b:c)', '1:2')
         self._test_pattern_fails('(pattern a:b:c)', 'nil')
+
+    def test_calling_pattern(self):
+        self.assertEqual(5, isheval('((pattern a) 5) a'))
+        self.assertEqual(10, isheval('(a = 10) a'))
+        self.assertRaises(Exception, isheval, '((pattern 5) 10)')
+        self.assertEqual(15, isheval('''
+            (foo = 10)
+            (change-foo = (fn -
+                (foo = 15)))
+            (change-foo)
+            foo
+            '''))
 
 unittest.main()

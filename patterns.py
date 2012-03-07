@@ -4,16 +4,29 @@ from core import nil, Pair
 import specials
 
 class Pattern:
-    pass
+    def call(self, arg, scope):
+        assert type(arg) is Pair or arg is nil
+        if arg is nil:
+            target = None
+        else:
+            assert eval_node(arg.cdr, scope) is nil
+            target = eval_node(arg.car, scope)
+        if not self.match(target, scope, True):
+            # return False
+            raise Exception("pattern failed to match")
+        return True
 
 class IdentifierPattern(Pattern):
     def __init__(self, identifier_node, scope):
         assert type(identifier_node) is IdentifierNode
         self.identifier = identifier_node.identifier
-    def match(self, target, scope):
+    def match(self, target, scope, recursive = False):
         if target is None:
             return False
-        scope.set(self.identifier, target)
+        if recursive:
+            scope.set_recursive(self.identifier, target)
+        else:
+            scope.set(self.identifier, target)
         return True
     def __repr__(self):
         return "(IdentifierPattern %s)" % self.identifier
@@ -26,7 +39,7 @@ class ValuePattern(Pattern):
     def __init__(self, node, scope):
         assert node is nil or isinstance(node, Node)
         self.value = eval_node(node, scope)
-    def match(self, target, scope):
+    def match(self, target, scope, recursive = False):
         return self.value == target
     def __repr__(self):
         return "(ValuePattern %s)" % repr(self.value)
@@ -54,12 +67,12 @@ class ConsPattern(Pattern):
             self.cdr_pattern = rec_pattern(pair.cdr, scope)
         else:
             self.cdr_pattern = specials.pattern(pair.cdr, scope)
-    def match(self, target, scope):
+    def match(self, target, scope, recursive = False):
         if target is nil or target is None:
-            return self.car_pattern.match(None, scope) and self.cdr_pattern.match(target, scope)
+            return self.car_pattern.match(None, scope, recursive) and self.cdr_pattern.match(target, scope, recursive)
         if type(target) is not Pair:
             return False
-        return self.car_pattern.match(target.car, scope) and self.cdr_pattern.match(target.cdr, scope)
+        return self.car_pattern.match(target.car, scope, recursive) and self.cdr_pattern.match(target.cdr, scope, recursive)
     def __repr__(self):
         return "(ConsPattern %s %s)" % (repr(self.car_pattern), repr(self.cdr_pattern))
     def nice_repr(self):
@@ -72,8 +85,8 @@ class PredicatedPattern(Pattern):
         self.pattern = pattern
         assert type(self.pattern) is not DefaultedPattern, "you can't apply a predicate to a defaulted pattern. it just doesn't make sense."
         self.predicate = predicate
-    def match(self, target, scope):
-        return self.pattern.match(target, scope) and self.predicate(Pair(target, nil), None) is True
+    def match(self, target, scope, recursive = False):
+        return self.pattern.match(target, scope, recursive) and self.predicate(Pair(target, nil), None) is True
     def __repr__(self):
         return "(PredicatedPattern %s %s)" % (repr(self.pattern), repr(self.predicate))
     def nice_repr(self):
@@ -87,9 +100,9 @@ class DefaultedPattern(IdentifierPattern):
         self.pattern = pattern
         self.default_value = default_value
         scope = Scope({}, None)
-    def match(self, target, scope):
+    def match(self, target, scope, recursive = False):
         if target is None:
-            return self.pattern.match(self.default_value, scope)
+            return self.pattern.match(self.default_value, scope, recursive)
         else:
             return self.pattern.match(target, scope) or self.pattern.match(self.default_value, scope)
     def __repr__(self):

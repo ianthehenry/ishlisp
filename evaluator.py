@@ -16,6 +16,25 @@ class Scope:
     def set(self, identifier, value):
         assert type(identifier) is str
         self.dict[identifier] = value
+    def has(self, identifier):
+        assert type(identifier) is str
+        return identifier in self.dict
+    def set_recursive(self, identifier, value, top = True):
+        if self.has(identifier):
+            self.set(identifier, value)
+            return True
+        elif self.parent is None:
+            if top:
+                self.set(identifier, value)
+                return True
+            else:
+                return False
+        elif self.parent.set_recursive(identifier, value, False):
+            pass
+        elif top:
+            self.set(identifier, value)
+        return True
+
     def identifiers(self):
         return self.dict.keys()
 

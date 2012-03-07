@@ -1,5 +1,5 @@
 import unittest
-from reader import lex, read, parse_forms, FormNode, BINARY_OPERATORS, PAIR_CDR_TOKEN, NumericLiteralNode, IdentifierNode, nil, expand_binary_operators, ValueNode
+from reader import lex, read, parse_forms, FormNode, BINARY_OPERATORS, UNARY_OPERATORS, PAIR_CDR_TOKEN, NumericLiteralNode, IdentifierNode, nil, expand_binary_operators, expand_unary_operators, ValueNode
 from evaluator import isheval, Pair, root, Scope, Function
 from types import LambdaType, FunctionType
 import specials
@@ -195,6 +195,13 @@ class Tests(unittest.TestCase):
 
     # read tests
 
+    def test_expand_unary_operators(self):
+        self.assertEqual(
+            [IdentifierNode('a'), Forms(ValueNode('_id', specials.id), IdentifierNode('b'))],
+            expand_unary_operators([IdentifierNode('a'), UNARY_OPERATORS['~'], IdentifierNode('b')]))
+        self.assertEqual(
+            [IdentifierNode('a'), Forms(ValueNode('_id', specials.id), Forms(ValueNode('_id', specials.id), IdentifierNode('b')))],
+            expand_unary_operators([IdentifierNode('a'), UNARY_OPERATORS['~'], UNARY_OPERATORS['~'], IdentifierNode('b')]))
     def test_expand_binary_operators(self):
         self.assertEqual(
             [Forms(ValueNode('_cons', specials.cons), IdentifierNode('a'), IdentifierNode('b'))], # TODO: FIX. Honestly, I have no idea what I wantd to fix here. This looks right to me.

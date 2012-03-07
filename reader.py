@@ -31,6 +31,15 @@ class BinaryOperatorNode(Node):
     def __str__(self):
         return "BinaryOperatorNode '%s'" % self.token
 
+class UnaryOperatorNode(Node):
+    def __init__(self, token, special_form):
+        self.token = token
+        self.special_form = special_form
+    def __repr__(self):
+        return self.token
+    def __str__(self):
+        return "UnaryOperatorNode '%s'" % self.token
+
 def parse_forms(lst, is_form_node = True):
     constructor = FormNode if is_form_node else Pair
 
@@ -103,7 +112,7 @@ def lookahead(indexable):
         i += 1
 
 def lex(code): # converts string to tokens, currently represented as simple strings
-    boundaries = set([' ', '\t', '\n', ')', '(', '|', '[', ']', '{', '}']) | BINARY_OPERATORS.keys()
+    boundaries = set([' ', '\t', '\n', ')', '(', '|', '[', ']', '{', '}']) | BINARY_OPERATORS.keys() | UNARY_OPERATORS.keys()
     tokens = []
     def end_token(char_list):
         token = ''.join(char_list)
@@ -156,6 +165,8 @@ def parse_single_token(token):
         return PAIR_CDR_TOKEN
     if token in BINARY_OPERATORS:
         return BINARY_OPERATORS[token]
+    if token in UNARY_OPERATORS:
+        return UNARY_OPERATORS[token]
     return IdentifierNode(token)
 
 matched_tokens = {
@@ -170,6 +181,26 @@ def reverse_iterator(items):
     while i >= 0:
         yield items[i]
         i -= 1
+
+def expand_unary_operators(nodes):
+    output = []
+    i = 0
+
+    def pop_node():
+        nonlocal i
+        if i >= len(nodes):
+            raise Exception("Unary operator must come before something")
+        node = nodes[i]
+        i += 1
+        if type(node) is UnaryOperatorNode:
+            return parse_forms((node.special_form, pop_node()))
+        else:
+            return node
+
+    while i < len(nodes):
+        output.append(pop_node())
+
+    return output
 
 def expand_binary_operators(nodes):
     output_queue = []
@@ -230,7 +261,7 @@ def parse(tokens): # converts token stream to s-expressions, parses numeric lite
     return [parse_single_token(first)] + parse(tokens[1:])
 
 def parse_and_expand(tokens):
-    return expand_binary_operators(parse(tokens))
+    return expand_binary_operators(expand_unary_operators(parse(tokens)))
 
 def read(code):
     return parse_and_expand(lex(code))
@@ -243,4 +274,8 @@ BINARY_OPERATORS = {
     '::': BinaryOperatorNode('::', ValueNode('_pattern-with-predicate', specials.pattern_with_predicate), 4, 'left'),
     '=': BinaryOperatorNode('=', ValueNode('_pattern-with-default', specials.pattern_with_default), 4, 'left'),
     '/': BinaryOperatorNode('/', ValueNode('_slash', specials.slash), 3, 'left'),
+}
+
+UNARY_OPERATORS = {
+    '~': UnaryOperatorNode('~', ValueNode('_id', specials.id)),
 }

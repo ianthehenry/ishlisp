@@ -19,3 +19,12 @@ class Pair:
         return '(Pair %s %s)' % (repr(self.car), repr(self.cdr))
     def __str__(self):
         return "(Pair %s %s)" % (str(self.car), str(self.cdr))
+
+class Symbol:
+    def __init__(self, value):
+        assert type(value) is str
+        self.value = value
+    def __eq__(self, other):
+        return type(other) is Symbol and self.value == other.value
+    def __repr__(self):
+        return "#%s" % self.value

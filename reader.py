@@ -94,6 +94,17 @@ class IdentifierNode(Node):
     def __eq__(self, other):
         return type(other) is IdentifierNode and self.identifier == other.identifier
 
+class SymbolLiteralNode(Node):
+    def __init__(self, token):
+        assert type(token) is str
+        self.value = token[1:]
+    def __repr__(self):
+        return "#%s" % self.value
+    def __str__(self):
+        return "(SymbolLiteralNode %s)" % self.value
+    def __eq__(self, other):
+        return type(other) is SymbolLiteralNode and self.value == other.value
+
 class NumericLiteralNode(Node):
     def __init__(self, token):
         assert type(token) is str
@@ -166,7 +177,7 @@ def read_matched_code(tokens, end, constructor, empty_constructor):
 def parse_single_token(token):
     assert token not in MATCHED_TOKENS
 
-    if re.match(r'\d+', token):
+    if re.match(r'^\d+$', token):
         return NumericLiteralNode(token)
     if token == PAIR_CDR_TOKEN:
         return PAIR_CDR_TOKEN
@@ -174,6 +185,9 @@ def parse_single_token(token):
         return BINARY_OPERATORS[token]
     if token in UNARY_OPERATORS:
         return UNARY_OPERATORS[token]
+    if re.match(r'^#[A-Za-z0-9-]+$', token):
+        return SymbolLiteralNode(token)
+
     return IdentifierNode(token)
 
 # TODO: get rid of the whole "empty constructor" nonsense

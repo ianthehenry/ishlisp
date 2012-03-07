@@ -52,7 +52,7 @@ class Function:
         new_scope = Scope({}, self.scope)
         evaled_arg = eval_node(arg, invoking_scope)
         if not self.pattern.match(evaled_arg, new_scope):
-            raise Exception("pattern did not match. pattern: '%s' actual: '%s'" % (repr(param_pattern), repr(evaled_arg)))
+            raise Exception("pattern did not match. pattern: '%s' actual: '%s'" % (repr(self.pattern), repr(evaled_arg)))
         val = evaled_arg
         forms = self.forms
         while forms is not nil:

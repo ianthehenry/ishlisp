@@ -70,13 +70,13 @@ class Tests(unittest.TestCase):
         self.assertEqual(8, isheval('(add 5 (add 1 2))'))
         self.assertEqual(18, isheval('(add (add 5 10) (add 1 2))'))
     def test_eval_builtin_id(self):
-        self.assertEqual(2, isheval('(id | 2)'))
-        self.assertEqual(5, isheval('(id | (add 2 3))'))
-        self.assertEqual(Pair(1, nil), isheval('(id | (list 1)'))
-        self.assertEqual(Pair(1, nil), isheval('(id | [1]'))
-        self.assertEqual(Pair(1, 2), isheval('(id | [1 | 2]'))
-        self.assertEqual(Pair(1, nil), isheval('(id 1)'))
-        self.assertEqual(20, isheval('((id | id) | 20)'))
+        self.assertEqual(2, isheval('(id 2)'))
+        self.assertEqual(5, isheval('(id (add 2 3))'))
+        self.assertEqual(Pair(1, nil), isheval('(id (list 1)'))
+        self.assertEqual(Pair(1, nil), isheval('(id [1]'))
+        self.assertEqual(Pair(1, 2), isheval('(id [1 | 2]'))
+        self.assertEqual(1, isheval('(id 1)'))
+        self.assertEqual(20, isheval('((id id) 20)'))
     def test_eval_square_brackets(self):
         self.assertEqual(Pair(1, nil), isheval('[1]'))
         self.assertEqual(Pair(1, Pair(2, Pair(3, nil))), isheval('[1 2 3]'))
@@ -114,16 +114,16 @@ class Tests(unittest.TestCase):
         self.assertEqual(my_id, isheval('(my_id | my_id)', scope))
         self.assertEqual(Pair(20, nil), isheval('(my_id 20)', scope))
     def test_eval_nested_functions(self):
-        compose = isheval('(fn x (fn y ((car (cdr x)) | ((car x) | y))))')
+        compose = isheval('(fn x (fn y ((car (cdr x)) ((car x) (car y)))))')
         self.assertEqual(Function, type(compose))
         scope = Scope({'compose': compose}, root)
         self.assertEqual(compose, isheval('compose', scope))
-        self.assertEqual(10, isheval('((compose id id) | 10)', scope))
-        self.assertEqual(Pair(10, nil), isheval('((compose id id) 10)', scope))
+        self.assertEqual(10, isheval('((compose id id) 10)', scope))
+        self.assertEqual(Pair(10, nil), isheval('((compose id id) [10])', scope))
     def test_function_patterns_simple(self):
-        compose = isheval('(fn [fn1 fn2] (fn y (fn2 | (fn1 | y))))')
+        compose = isheval('(fn [fn1 fn2] (fn [y] (fn2 (fn1 y))))')
         scope = Scope({'compose': compose}, root)
-        self.assertEqual(10, isheval('((compose id id) | 10)', scope))
+        self.assertEqual(10, isheval('((compose id id) 10)', scope))
 
         my_car = isheval('(fn [x:xs] x)')
         scope = Scope({'my-car': my_car}, root)
@@ -151,7 +151,7 @@ class Tests(unittest.TestCase):
         self.assertEqual(3, isheval('((unary_compose cadr cdr) [1 2 3])', scope))
     def test_eval_builtins(self):
         self.assertEqual(1, isheval('(car [1])'))
-        self.assertEqual(1, isheval('(car (id 1))'))
+        self.assertEqual(1, isheval('(car (id [1]))'))
         self.assertEqual(nil, isheval('(cdr [1])'))
         self.assertEqual(Pair(1, 2), isheval('(call cons 1 2)'))
         self.assertEqual(Pair(1, 2), isheval('(apply cons (list 1 2))'))
@@ -305,23 +305,23 @@ class Tests(unittest.TestCase):
             FormNode(IdentifierNode('id'), Pair(NumericLiteralNode('1'), Pair(NumericLiteralNode('2'), nil))),
             read_one('(id 1 2)'))
         self.assertEqual(
-            FormNode(IdentifierNode('id'), NumericLiteralNode('1')),
-            read_one('(id | 1)'))
+            Forms(IdentifierNode('id'), NumericLiteralNode('1')),
+            read_one('(id 1)'))
         self.assertEqual(
-            FormNode(IdentifierNode('id'), FormNode(IdentifierNode('add'),
+            Forms(IdentifierNode('id'), FormNode(IdentifierNode('add'),
                 Pair(NumericLiteralNode('1'), Pair(NumericLiteralNode('2'), nil)))),
-            read_one('(id | (add 1 2)'))
+            read_one('(id (add 1 2)'))
         self.assertEqual(
-            FormNode(IdentifierNode('id'), FormNode(ValueNode('_list', specials.list_),
+            Forms(IdentifierNode('id'), FormNode(ValueNode('_list', specials.list_),
                 Pair(NumericLiteralNode('1'), Pair(NumericLiteralNode('2'), nil)))),
-            read_one('(id | [1 2])'))
+            read_one('(id [1 2])'))
         self.assertEqual(
-            FormNode(IdentifierNode('id'), FormNode(ValueNode('_list', specials.list_),
+            Forms(IdentifierNode('id'), FormNode(ValueNode('_list', specials.list_),
                 Pair(NumericLiteralNode('1'), NumericLiteralNode('2')))),
-            read_one('(id | [1 | 2])'))
+            read_one('(id [1 | 2])'))
         self.assertEqual(
-            FormNode(FormNode(IdentifierNode('id'), IdentifierNode('id')), NumericLiteralNode('1')),
-            read_one('((id | id) | 1)'))
+            Forms(Forms(IdentifierNode('id'), IdentifierNode('id')), NumericLiteralNode('1')),
+            read_one('((id id) 1)'))
 
         self.assertEqual(Forms(IdentifierNode('print'),
             Forms(IdentifierNode('add'),

@@ -23,7 +23,9 @@ def odd(arg, scope):
     return not even(arg, scope)
 
 def id(arg, scope):
-    return eval_node(arg, scope)
+    assert type(arg) is Pair
+    assert eval_node(arg.cdr, scope) is nil
+    return eval_node(arg.car, scope)
 
 def car(arg, scope):
     assert type(arg) is Pair

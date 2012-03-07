@@ -200,7 +200,7 @@ MATCHED_TOKENS = {
         lambda *sexp: FormNode(ValueNode('_array', specials.array), parse_forms(sexp, False)),
         lambda: FormNode(ValueNode('_array', specials.array), nil)),
     '#(': (')',
-        lambda *sexp: FormNode(ValueNode('_fn', specials.fn), Pair(FormNode(specials.default_arguments_pattern, nil), Pair(parse_forms(sexp, True), nil))),
+        lambda *sexp: FormNode(ValueNode('_sfn', specials.function_shorthand), parse_forms(sexp, False)),
         lambda: ValueNode('_nil', nil)), # TODO: not sure what this should be
 }
 

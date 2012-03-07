@@ -154,8 +154,6 @@ def pattern(arg, scope):
             return pattern_with_default(arg.cdr, scope)
         elif car is pattern:
             return pattern(arg.cdr, scope)
-        elif car is default_arguments_pattern:
-            return default_arguments_pattern(arg.cdr, scope)
 
     return ValuePattern(eval_node(arg, scope))
 
@@ -165,8 +163,8 @@ def array(arg, scope):
 def slash(arg, scope):
     raise Exception("not yet implemented")
 
-def default_arguments_pattern(arg, scope):
-    return default_arguments_pattern_singleton
+def function_shorthand(arg, scope):
+    return Function(default_arguments_pattern_singleton, Pair(FormNode(arg.car, arg.cdr), nil), scope)
 
 from core import Pair, nil
 from reader import FormNode, IdentifierNode, ValueNode

@@ -94,12 +94,11 @@ class PredicatedPattern(Pattern):
     def __eq__(self, other):
         return type(other) is PredicatedPattern and self.pattern == other.pattern and self.predicate == other.predicate
 
-class DefaultedPattern(IdentifierPattern):
+class DefaultedPattern(Pattern):
     def __init__(self, pattern, default_value):
         assert isinstance(pattern, Pattern)
         self.pattern = pattern
         self.default_value = default_value
-        scope = Scope({}, None)
     def match(self, target, scope, recursive = False):
         if target is None:
             return self.pattern.match(self.default_value, scope, recursive)
@@ -111,3 +110,19 @@ class DefaultedPattern(IdentifierPattern):
         return repr(self)
     def __eq__(self, other):
         return type(other) is DefaultedPattern and self.pattern == other.pattern and self.default_value == other.default_value
+
+class AliasedPattern(Pattern):
+    def __init__(self, left_pattern, right_pattern):
+        assert isinstance(left_pattern, Pattern)
+        assert isinstance(right_pattern, Pattern)
+        self.left_pattern = left_pattern
+        self.right_pattern = right_pattern
+    def match(self, target, scope, recursive = False):
+        return self.left_pattern.match(target, scope, recursive) and self.right_pattern.match(target, scope, recursive)
+    def __repr__(self):
+        return "(AliasedPattern %s %s)" % (repr(self.left_pattern), repr(self.right_pattern))
+    def nice_repr(self):
+        return repr(self)
+    def __eq__(self, other):
+        return type(other) is AliasedPattern and self.left_pattern == other.left_pattern and self.right_pattern == other.right_pattern
+

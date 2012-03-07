@@ -240,6 +240,7 @@ import specials
 BINARY_OPERATORS = {
     ':': BinaryOperatorNode(':', ValueNode('_cons', specials.cons), 2, 'right'),
     '.': BinaryOperatorNode('.', ValueNode('_get', specials.get), 1, 'left'),
-    '::': BinaryOperatorNode('::', ValueNode('_pattern-with-predicate', specials.pattern_with_predicate), 3, 'left'),
-    '=': BinaryOperatorNode('=', ValueNode('_pattern-with-default', specials.pattern_with_default), 3, 'left'),
+    '::': BinaryOperatorNode('::', ValueNode('_pattern-with-predicate', specials.pattern_with_predicate), 4, 'left'),
+    '=': BinaryOperatorNode('=', ValueNode('_pattern-with-default', specials.pattern_with_default), 4, 'left'),
+    '/': BinaryOperatorNode('/', ValueNode('_slash', specials.slash), 3, 'left'),
 }

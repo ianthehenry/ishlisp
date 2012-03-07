@@ -555,4 +555,10 @@ class Tests(unittest.TestCase):
             foo
             '''))
 
+    def test_aliased_pattern(self):
+        self.assertEqual(10, isheval('((pattern a/b) 5) (add a b)'))
+        self.assertEqual(15, isheval('((pattern a/b/c) 5) (add (add a b) c)'))
+        self.assertRaises(Exception, isheval, '((pattern a/b::even?) 5) b')
+        self.assertEqual(12, isheval('((pattern a/b::even?) 6) (add a b)'))
+
 unittest.main()

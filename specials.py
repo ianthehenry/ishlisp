@@ -118,6 +118,15 @@ def pattern_with_default(arg, scope):
 
     return DefaultedPattern(base_pattern, eval_node(value_node, scope))
 
+def _get_aliased_pattern(arg, scope):
+    assert type(arg) is Pair
+    assert type(arg.cdr) is Pair
+    assert eval_node(arg.cdr.cdr, scope) is nil
+    left_pattern = pattern(arg.car, scope)
+    right_pattern = pattern(arg.cdr.car, scope)
+
+    return AliasedPattern(left_pattern, right_pattern)
+
 def pattern(arg, scope):
     assert arg is nil or type(arg) is Pair or isinstance(arg, Node)
 
@@ -135,6 +144,8 @@ def pattern(arg, scope):
             return ConsPattern(arg.cdr, scope)
         elif car is list_:
             return ConsPattern(arg.cdr, scope, True)
+        elif car is slash:
+            return _get_aliased_pattern(arg.cdr, scope)
         elif car is pattern_with_predicate:
             return pattern_with_predicate(arg.cdr, scope)
         elif car is pattern_with_default:
@@ -144,6 +155,9 @@ def pattern(arg, scope):
         else:
             raise Exception("unrecognized special form in pattern")
     return ValuePattern(arg, scope)
+
+def slash(arg, scope):
+    raise Exception("not yet implemented")
 
 from core import Pair, nil
 from reader import FormNode, IdentifierNode, ValueNode

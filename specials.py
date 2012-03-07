@@ -157,6 +157,9 @@ def pattern(arg, scope):
 
     return ValuePattern(eval_node(arg, scope))
 
+def array(arg, scope):
+    raise Exception("not yet implemented")
+
 def slash(arg, scope):
     raise Exception("not yet implemented")
 

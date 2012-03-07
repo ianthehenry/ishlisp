@@ -112,7 +112,11 @@ def lookahead(indexable):
         i += 1
 
 def lex(code): # converts string to tokens, currently represented as simple strings
-    boundaries = set([' ', '\t', '\n', ')', '(', '|', '[', ']', '{', '}']) | BINARY_OPERATORS.keys() | UNARY_OPERATORS.keys()
+    boundaries = set([' ', '\t', '\n', PAIR_CDR_TOKEN]) | \
+        BINARY_OPERATORS.keys() | \
+        UNARY_OPERATORS.keys() | \
+        MATCHED_TOKENS.keys() | \
+        set([end for end, _, _ in MATCHED_TOKENS.values()])
     tokens = []
     def end_token(char_list):
         token = ''.join(char_list)
@@ -138,11 +142,12 @@ def lex(code): # converts string to tokens, currently represented as simple stri
     end_token(current_token)
     return tokens
 
-def read_matched_code(tokens, start, end, constructor, empty_constructor):
+def read_matched_code(tokens, end, constructor, empty_constructor):
+    increasers = set([key for key in MATCHED_TOKENS if MATCHED_TOKENS[key][0] == end])
     nesting_depth = 1
     def pred(token):
         nonlocal nesting_depth
-        if token == start:
+        if token in increasers:
             nesting_depth += 1
         elif token == end:
             nesting_depth -= 1
@@ -150,6 +155,8 @@ def read_matched_code(tokens, start, end, constructor, empty_constructor):
         return True
 
     form_tokens = list(takewhile(pred, tokens))
+    if nesting_depth != 0:
+        raise Exception("Unbalanced tokens")
 
     if len(form_tokens) == 0:
         return (empty_constructor(), 1)
@@ -157,7 +164,7 @@ def read_matched_code(tokens, start, end, constructor, empty_constructor):
     return (constructor(*parse_and_expand(form_tokens)), len(form_tokens) + 1) # +1 to account for the closing paren/bracket/whatever
 
 def parse_single_token(token):
-    assert token not in matched_tokens
+    assert token not in MATCHED_TOKENS
 
     if re.match(r'\d+', token):
         return NumericLiteralNode(token)
@@ -169,11 +176,15 @@ def parse_single_token(token):
         return UNARY_OPERATORS[token]
     return IdentifierNode(token)
 
-matched_tokens = {
+# TODO: get rid of the whole "empty constructor" nonsense
+MATCHED_TOKENS = {
     '(': (')', lambda *sexp: parse_forms(sexp), lambda: ValueNode('_nil', nil)), # this should actually throw an exception, but i'm allowing it for now...makes sense if nil can be used as a function
     '[': (']',
         lambda *sexp: FormNode(ValueNode('_list', specials.list_), parse_forms(sexp, False)),
-        lambda: ValueNode('_nil', nil))
+        lambda: ValueNode('_nil', nil)),
+    '#[': (']',
+        lambda *sexp: FormNode(ValueNode('_array', specials.array), parse_forms(sexp, False)),
+        lambda: FormNode(ValueNode('_array', specials.array), nil)),
 }
 
 def reverse_iterator(items):
@@ -254,8 +265,8 @@ def parse(tokens): # converts token stream to s-expressions, parses numeric lite
 
     first = tokens[0]
 
-    if first in matched_tokens:
-        matched_token, tokens_consumed = read_matched_code(tokens[1:], first, *matched_tokens[first])
+    if first in MATCHED_TOKENS:
+        matched_token, tokens_consumed = read_matched_code(tokens[1:], *MATCHED_TOKENS[first])
         return [matched_token] + parse(tokens[1 + tokens_consumed:])
 
     return [parse_single_token(first)] + parse(tokens[1:])

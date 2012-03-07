@@ -72,9 +72,9 @@ class Tests(unittest.TestCase):
     def test_eval_builtin_id(self):
         self.assertEqual(2, isheval('(id 2)'))
         self.assertEqual(5, isheval('(id (add 2 3))'))
-        self.assertEqual(Pair(1, nil), isheval('(id (list 1)'))
-        self.assertEqual(Pair(1, nil), isheval('(id [1]'))
-        self.assertEqual(Pair(1, 2), isheval('(id [1 | 2]'))
+        self.assertEqual(Pair(1, nil), isheval('(id (list 1))'))
+        self.assertEqual(Pair(1, nil), isheval('(id [1])'))
+        self.assertEqual(Pair(1, 2), isheval('(id [1 | 2])'))
         self.assertEqual(1, isheval('(id 1)'))
         self.assertEqual(20, isheval('((id id) 20)'))
     def test_eval_square_brackets(self):
@@ -317,7 +317,7 @@ class Tests(unittest.TestCase):
         self.assertEqual(
             Forms(IdentifierNode('id'), FormNode(IdentifierNode('add'),
                 Pair(NumericLiteralNode('1'), Pair(NumericLiteralNode('2'), nil)))),
-            read_one('(id (add 1 2)'))
+            read_one('(id (add 1 2))'))
         self.assertEqual(
             Forms(IdentifierNode('id'), FormNode(ValueNode('_list', specials.list_),
                 Pair(NumericLiteralNode('1'), Pair(NumericLiteralNode('2'), nil)))),
@@ -509,7 +509,7 @@ class Tests(unittest.TestCase):
         self._test_pattern_fails('(pattern [a b = 20 | 3])', '[1]')
         self._test_pattern_fails('(pattern [a b = 20 | 3])', 'nil')
 
-        self._test_pattern('(pattern [a b = 20 [])', '[1 2 nil]', {'a': 1, 'b': 2})
+        self._test_pattern('(pattern [a b = 20 []])', '[1 2 nil]', {'a': 1, 'b': 2})
         self._test_pattern('(pattern [a b = 20 []])', '[1 nil nil]', {'a': 1, 'b': nil})
         self._test_pattern_fails('(pattern [a b = 20 []])', '[1 nil]')
         self._test_pattern_fails('(pattern [a b = 20 []])', '[1]')

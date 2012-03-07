@@ -124,4 +124,3 @@ class AliasedPattern(Pattern):
         return repr(self)
     def __eq__(self, other):
         return type(other) is AliasedPattern and self.left_pattern == other.left_pattern and self.right_pattern == other.right_pattern
-

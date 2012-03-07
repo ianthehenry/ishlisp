@@ -36,9 +36,8 @@ class IdentifierPattern(Pattern):
         return type(other) is IdentifierPattern and self.identifier == other.identifier
 
 class ValuePattern(Pattern):
-    def __init__(self, node, scope):
-        assert node is nil or isinstance(node, Node)
-        self.value = eval_node(node, scope)
+    def __init__(self, value):
+        self.value = value
     def match(self, target, scope, recursive = False):
         return self.value == target
     def __repr__(self):
@@ -54,7 +53,7 @@ def rec_pattern(arg, scope):
         return ConsPattern(arg, scope, True)
     else:
         if arg is nil:
-            return ValuePattern(nil, None)
+            return ValuePattern(nil)
         else:
             return specials.pattern(arg, scope)
 

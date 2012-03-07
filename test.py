@@ -561,4 +561,8 @@ class Tests(unittest.TestCase):
         self.assertRaises(Exception, isheval, '((pattern a/b::even?) 5) b')
         self.assertEqual(12, isheval('((pattern a/b::even?) 6) (add a b)'))
 
+    def test_evaluation_within_patterns(self):
+        self.assertEqual(10, isheval('((pattern [foo (add 3 2)]) [10 5]) foo'))
+        self.assertRaises(Exception, isheval, '((pattern (add 3 2)) 6)')
+
 unittest.main()

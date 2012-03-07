@@ -152,9 +152,8 @@ def pattern(arg, scope):
             return pattern_with_default(arg.cdr, scope)
         elif car is pattern:
             return pattern(arg.cdr, scope)
-        else:
-            raise Exception("unrecognized special form in pattern")
-    return ValuePattern(arg, scope)
+
+    return ValuePattern(eval_node(arg, scope))
 
 def slash(arg, scope):
     raise Exception("not yet implemented")

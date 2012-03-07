@@ -42,7 +42,7 @@ class Function:
     def __init__(self, pattern, forms, scope):
         assert isinstance(pattern, Pattern)
         assert isinstance(scope, Scope)
-        assert isinstance(forms, Pair)
+        assert type(forms) is Pair or forms is nil
         self.pattern = pattern
         self.forms = forms
         self.scope = scope
@@ -52,12 +52,14 @@ class Function:
         new_scope = Scope({}, self.scope)
         evaled_arg = eval_node(arg, invoking_scope)
         if not self.pattern.match(evaled_arg, new_scope):
-            raise Exception("pattern did not match. pattern: '%s' actual: '%s'" % (repr(self.pattern), repr(evaled_arg)))
-        val = evaled_arg
+            raise Exception("pattern did not match. pattern: '%s' actual: '%s'" % (self.pattern.nice_repr(), repr(evaled_arg)))
+        val = nil # TODO: should be void
+        if not new_scope.has('-'):
+            new_scope.set('-', val)
         forms = self.forms
         while forms is not nil:
-            new_scope.set('-', val)
             val = eval_node(forms.car, new_scope)
+            new_scope.set('-', val)
             forms = forms.cdr
         return val
 

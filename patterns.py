@@ -124,3 +124,31 @@ class AliasedPattern(Pattern):
         return repr(self)
     def __eq__(self, other):
         return type(other) is AliasedPattern and self.left_pattern == other.left_pattern and self.right_pattern == other.right_pattern
+
+class DefaultArgumentsPattern(Pattern):
+    def __init__(self):
+        pass
+    def match(self, target, scope, recursive = False):
+        assert not recursive
+        # alright, let's do it
+        scope.set('--', target)
+        if target is nil:
+            return True
+
+        index = 1
+        arg = target
+        while arg != nil:
+            assert type(target) is Pair # should later work with any ordered sequence, plus maps for keyword args
+            scope.set('-%d' % index, arg.car)
+            arg = arg.cdr
+            index += 1
+
+        scope.set('-', target.car)
+
+        return True
+    def __repr__(self):
+        return "(DefaultArgumentsPattern)"
+    def nice_repr(self):
+        return repr(self)
+    def __eq__(self, other):
+        return type(other) is DefaultArgumentsPattern

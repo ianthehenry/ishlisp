@@ -82,7 +82,7 @@ def get(arg, scope):
 # TODO: it might be nice to allow keyword args that attached metadata to a function. maybe?
 def fn(declaration, outer_scope):
     param_pattern = pattern(declaration.car, outer_scope)
-    assert type(declaration.cdr) is Pair
+    assert type(declaration.cdr) is Pair or declaration.cdr is nil
     return Function(param_pattern, declaration.cdr, outer_scope)
 
 def match(arg, scope):
@@ -154,6 +154,8 @@ def pattern(arg, scope):
             return pattern_with_default(arg.cdr, scope)
         elif car is pattern:
             return pattern(arg.cdr, scope)
+        elif car is default_arguments_pattern:
+            return default_arguments_pattern(arg.cdr, scope)
 
     return ValuePattern(eval_node(arg, scope))
 
@@ -163,8 +165,13 @@ def array(arg, scope):
 def slash(arg, scope):
     raise Exception("not yet implemented")
 
+def default_arguments_pattern(arg, scope):
+    return default_arguments_pattern_singleton
+
 from core import Pair, nil
 from reader import FormNode, IdentifierNode, ValueNode
 from evaluator import eval_node, Scope, Function
 from patterns import *
 from types import FunctionType
+
+default_arguments_pattern_singleton = DefaultArgumentsPattern()

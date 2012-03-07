@@ -101,9 +101,11 @@ class Tests(unittest.TestCase):
         self.assertEqual(Pair(5, nil), isheval('((fn x x) (add 2 3))'))
         self.assertEqual(30, isheval('((fn x (add 10 (car x))) 20)'))
         self.assertRaises(Exception, isheval, '((add 1 2))')
+    def test_empty_functions_return_nil(self): # should return void later
+        self.assertEqual(nil, isheval('((fn x))'))
     def test_functions_bind_hyphen(self):
-        self.assertEqual(10, isheval('((fn [x] (add x (car -))) 5)'))
         self.assertEqual(12, isheval('((fn [x] (add 3 4) (add x -)) 5)'))
+        self.assertEqual(nil, isheval('((fn [x] -) 5)')) # TODO: should eventually be void
     def test_eval_functions_in_scope(self):
         my_id = isheval('(fn x x)')
         scope = Scope({'my_id': my_id}, root)
@@ -149,6 +151,11 @@ class Tests(unittest.TestCase):
         scope.set('cadr', cadr)
         self.assertEqual(2, isheval('(cadr [1 2 3])', scope))
         self.assertEqual(3, isheval('((unary_compose cadr cdr) [1 2 3])', scope))
+    def test_function_shorthand(self):
+        self.assertEqual(25, isheval('(#(add - 20) 5)'))
+        self.assertEqual(15, isheval('(#(add -1 -2) 5 10)'))
+        self.assertEqual(nil, isheval('(#(id -))')) # TODO: should eventually be void
+        self.assertRaises(Exception, isheval, '(#(add -1 -2) 5)')
     def test_eval_builtins(self):
         self.assertEqual(1, isheval('(car [1])'))
         self.assertEqual(1, isheval('(car (id [1]))'))

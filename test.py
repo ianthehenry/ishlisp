@@ -579,4 +579,14 @@ class Tests(unittest.TestCase):
         self.assertEqual(10, isheval('((pattern [foo (add 3 2)]) [10 5]) foo'))
         self.assertRaises(Exception, isheval, '((pattern (add 3 2)) 6)')
 
+    # object tests
+
+    def test_objects(self):
+        self.assertEqual(Pair(40, 10), isheval('''
+            (baz = 10)
+            (obj = {foo: {bar: 40}, baz})
+            (obj2 = {obj.foo.bar})
+            obj2.bar:obj.baz
+            '''))
+
 unittest.main()

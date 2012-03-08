@@ -28,3 +28,24 @@ class Symbol:
         return type(other) is Symbol and self.value == other.value
     def __repr__(self):
         return "#%s" % self.value
+    def __hash__(self):
+        return hash(self.value)
+
+class Object:
+    def __init__(self):
+        self.dict = {}
+        self.proto = None
+    def get(self, key):
+        assert type(key) is IdentifierNode # TODO: should eventually allow resolution to something else
+        return self.dict[key.identifier]
+    def set(self, key, value):
+        assert type(key) is str
+        self.dict[key] = value
+    def __eq__(self, other):
+        return self is other
+    def __repr__(self):
+        if len(self.dict) == 0:
+            return '{}'
+        return '{ %s }' % ', '.join(['%s: %s' % (key, repr(value)) for key, value in self.dict.items()])
+
+from reader import IdentifierNode

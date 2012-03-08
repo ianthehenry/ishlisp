@@ -1,7 +1,4 @@
-import re
-from core import Pair, nil
-from itertools import takewhile
-# more imports below
+# imports below
 
 PAIR_CDR_TOKEN = '|'
 
@@ -123,7 +120,7 @@ def lookahead(indexable):
         i += 1
 
 def lex(code): # converts string to tokens, currently represented as simple strings
-    boundaries = set([' ', '\t', '\n', PAIR_CDR_TOKEN]) | \
+    boundaries = set([' ', '\t', '\n', ',', PAIR_CDR_TOKEN]) | \
         BINARY_OPERATORS.keys() | \
         UNARY_OPERATORS.keys() | \
         MATCHED_TOKENS.keys() | \
@@ -131,7 +128,7 @@ def lex(code): # converts string to tokens, currently represented as simple stri
     tokens = []
     def end_token(char_list):
         token = ''.join(char_list)
-        if not re.match(r'^\s*$', token):
+        if not re.match(r'^[ \t\n,]*$', token):
             tokens.append(token)
     current_token = []
     skip_character = False
@@ -201,7 +198,10 @@ MATCHED_TOKENS = {
         lambda: FormNode(ValueNode('_array', specials.array), nil)),
     '#(': (')',
         lambda *sexp: FormNode(ValueNode('_sfn', specials.function_shorthand), parse_forms(sexp, False)),
-        lambda: ValueNode('_nil', nil)), # TODO: not sure what this should be
+        lambda: ValueNode('_nil', nil)), # TODO: this should be the void function
+    '{': ('}',
+        lambda *sexp: FormNode(ValueNode('_object', specials.object), parse_forms(sexp, False)),
+        lambda: FormNode(ValueNode('_object', specials.object), nil))
 }
 
 def reverse_iterator(items):
@@ -295,6 +295,9 @@ def read(code):
     return parse_and_expand(lex(code))
 
 import specials
+import re
+from core import Pair, nil
+from itertools import takewhile
 
 BINARY_OPERATORS = {
     ':': BinaryOperatorNode(':', ValueNode('_cons', specials.cons), 2, 'right'),

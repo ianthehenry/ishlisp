@@ -87,10 +87,11 @@ def set(arg, scope):
     return obj.set(arg.cdr, scope)
 
 # TODO: it might be nice to allow keyword args that attached metadata to a function. maybe?
-def fn(declaration, outer_scope):
-    param_pattern = pattern(declaration.car, outer_scope)
-    assert type(declaration.cdr) is Pair or declaration.cdr is nil
-    return Function(param_pattern, declaration.cdr, outer_scope)
+def function(arg, outer_scope):
+    return Function(arg, outer_scope)
+
+def method(arg, outer_scope):
+    return Method(arg, outer_scope)
 
 def match(arg, scope):
     assert type(arg) is Pair
@@ -146,8 +147,9 @@ def pattern(arg, scope):
 
     if type(arg) is IdentifierNode:
         return IdentifierPattern(arg, scope)
-
-    if type(arg) is FormNode:
+    elif type(arg) is ValueNode and isinstance(arg.value, Pattern):
+        return eval_node(arg, scope)
+    elif type(arg) is FormNode:
         car = eval_node(arg.car, scope) # TODO: add tests that verify this is not evaluated more than once
         arg = FormNode(ValueNode('CACHE', car), arg.cdr)
         if car is cons:
@@ -172,7 +174,7 @@ def slash(arg, scope):
     raise Exception("not yet implemented")
 
 def function_shorthand(arg, scope):
-    return Function(default_arguments_pattern_singleton, Pair(FormNode(arg.car, arg.cdr), nil), scope)
+    return Function(Pair(ValueNode('_default_pattern', default_arguments_pattern_singleton), Pair(FormNode(arg.car, arg.cdr), nil)), scope)
 
 def object(arg, scope):
     obj = Object()
@@ -203,6 +205,9 @@ def object(arg, scope):
 
     return obj
 
+def bind(arg, scope):
+    return BoundMethod(arg, scope)
+
 def dictionary(arg, scope):
     dct = Dictionary()
 
@@ -216,7 +221,7 @@ def dictionary(arg, scope):
 
 from core import Pair, Object, nil, Symbol, Dictionary
 from reader import FormNode, IdentifierNode, ValueNode
-from evaluator import eval_node, Scope, Function
+from evaluator import eval_node, Scope, Function, Method, BoundMethod
 from patterns import *
 from types import FunctionType
 

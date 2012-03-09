@@ -39,17 +39,16 @@ class Scope:
         return self.dict.keys()
 
 class Function:
-    def __init__(self, pattern, forms, scope):
-        assert isinstance(pattern, Pattern)
-        assert isinstance(scope, Scope)
-        assert type(forms) is Pair or forms is nil
-        self.pattern = pattern
-        self.forms = forms
+    def __init__(self, arg, scope):
+        assert type(arg) is Pair
+        assert type(arg.cdr) is Pair or arg.cdr is nil
+        self.pattern = specials.pattern(arg.car, scope)
+        self.forms = arg.cdr
         self.scope = scope
     def __repr__(self):
         return "(fn %s %s)" % (self.pattern.nice_repr(), repr(self.forms))
-    def call(self, arg, invoking_scope):
-        new_scope = Scope({}, self.scope)
+    def call(self, arg, invoking_scope, initial_scope_contents = None):
+        new_scope = Scope(initial_scope_contents or {}, self.scope)
         evaled_arg = eval_node(arg, invoking_scope)
         if not self.pattern.match(evaled_arg, new_scope):
             raise Exception("pattern did not match. pattern: '%s' actual: '%s'" % (self.pattern.nice_repr(), repr(evaled_arg)))
@@ -62,6 +61,28 @@ class Function:
             new_scope.set('-', val)
             forms = forms.cdr
         return val
+
+class Method(Function):
+    def __repr__(self):
+        return "(md %s %s)" % (self.pattern.nice_repr(), repr(self.forms))
+    def call(self, arg, invoking_scope):
+        raise Exception("an unbound method cannot be invoked")
+
+class BoundMethod:
+    def __init__(self, arg, scope):
+        assert type(arg) is Pair
+        assert type(arg.cdr) is Pair
+        assert eval_node(arg.cdr.cdr, scope) is nil
+
+        self.method = eval_node(arg.car, scope)
+        if type(self.method) is BoundMethod:
+            raise Exception("you cannot rebind a method...yet")
+        assert type(self.method) is Method
+        self.obj = eval_node(arg.cdr.car, scope)
+    def __repr__(self):
+        return "(BoundMethod %s %s)" % (repr(self.method), repr(self.obj))
+    def call(self, arg, invoking_scope):
+        return super(Method, self.method).call(arg, invoking_scope, {'this': self.obj})
 
 def eval_node(node, scope):
     if type(node) is Pair:
@@ -100,7 +121,11 @@ root = Scope({
     'set': specials.set,
     'car': specials.car,
     'cdr': specials.cdr,
-    'fn': specials.fn,
+    'function': specials.function,
+    'fn': specials.function,
+    'method': specials.method,
+    'md': specials.method,
+    'bind': specials.bind,
     'pattern': specials.pattern,
     'pattern-with-predicate': specials.pattern_with_predicate,
     'pattern-with-default': specials.pattern_with_default,

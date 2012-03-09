@@ -639,4 +639,14 @@ class Tests(unittest.TestCase):
             (set dict #foo 30)
             dict.5 : dict.foo : dict.#foo'''))
 
+    # test method
+
+    def test_binding_methods(self):
+        self.assertEqual(15, isheval('''
+            (meth = (md [a] (add a @bar)))
+            (foo = {bar: 10})
+            ((bind meth foo) 5)'''))
+    def test_cant_invoke_unbound_method(self):
+        self.assertRaises(Exception, isheval, '((md - 10) 5)')
+
 unittest.main()

@@ -209,6 +209,9 @@ class Tests(unittest.TestCase):
         self.assertEqual(
             [IdentifierNode('a'), Forms(ValueNode('_id', specials.id), Forms(ValueNode('_id', specials.id), IdentifierNode('b')))],
             expand_unary_operators([IdentifierNode('a'), UNARY_OPERATORS['~'], UNARY_OPERATORS['~'], IdentifierNode('b')]))
+        self.assertEqual(
+            [IdentifierNode('a'), Forms(ValueNode('_get', specials.get), IdentifierNode('this'), IdentifierNode('b'))],
+            expand_unary_operators([IdentifierNode('a'), UNARY_OPERATORS['@'], IdentifierNode('b')]))
     def test_expand_binary_operators(self):
         self.assertEqual(
             [Forms(ValueNode('_cons', specials.cons), IdentifierNode('a'), IdentifierNode('b'))], # TODO: FIX. Honestly, I have no idea what I wantd to fix here. This looks right to me.

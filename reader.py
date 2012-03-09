@@ -29,9 +29,9 @@ class BinaryOperatorNode(Node):
         return "BinaryOperatorNode '%s'" % self.token
 
 class UnaryOperatorNode(Node):
-    def __init__(self, token, special_form):
+    def __init__(self, token, special_forms):
         self.token = token
-        self.special_form = special_form
+        self.special_forms = special_forms
     def __repr__(self):
         return self.token
     def __str__(self):
@@ -224,7 +224,7 @@ def expand_unary_operators(nodes):
         node = nodes[i]
         i += 1
         if type(node) is UnaryOperatorNode:
-            return parse_forms((node.special_form, pop_node()))
+            return parse_forms(node.special_forms + (pop_node(),))
         else:
             return node
 
@@ -311,5 +311,6 @@ BINARY_OPERATORS = {
 }
 
 UNARY_OPERATORS = {
-    '~': UnaryOperatorNode('~', ValueNode('_id', specials.id)),
+    '~': UnaryOperatorNode('~', (ValueNode('_id', specials.id),)),
+    '@': UnaryOperatorNode('@', (ValueNode('_get', specials.get), IdentifierNode('this'))),
 }

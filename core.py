@@ -43,12 +43,20 @@ class Object:
     def __init__(self):
         self.dict = {}
         self.proto = None
-    def get(self, key):
-        assert type(key) is IdentifierNode # TODO: should eventually allow resolution to something else
-        return self.dict[key.identifier]
-    def set(self, key, value):
-        assert type(key) is str
-        self.dict[key] = value
+    def get(self, arg, scope):
+        assert type(arg) is Pair
+        assert eval_node(arg.cdr, scope) is nil
+        key_node = arg.car
+        assert type(key_node) is IdentifierNode # TODO: maybe allow something else
+        return self.dict[key_node.identifier]
+    def set(self, arg, scope):
+        assert type(arg) is Pair
+        assert type(arg.cdr) is Pair
+        assert eval_node(arg.cdr.cdr, scope) is nil
+        key_node = arg.car
+        assert type(key_node) is IdentifierNode # TODO: maybe allow something else
+        value = eval_node(arg.cdr.car, scope)
+        self.dict[key_node.identifier] = value
     def __eq__(self, other):
         return self is other
     def __repr__(self):
@@ -56,5 +64,6 @@ class Object:
             return '{}'
         return '{ %s }' % ', '.join(['%s: %s' % (key, repr(value)) for key, value in self.dict.items()])
 
-from reader import IdentifierNode
+from reader import Node, IdentifierNode
 from types import FunctionType
+from evaluator import eval_node

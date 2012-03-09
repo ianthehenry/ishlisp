@@ -78,11 +78,13 @@ def list_(arg, scope):
 
 def get(arg, scope):
     assert type(arg) is Pair
-    assert type(arg.cdr) is Pair
-    assert eval_node(arg.cdr.cdr, scope) is nil
     obj = eval_node(arg.car, scope)
-    slot_node = arg.cdr.car
-    return obj.get(slot_node)
+    return obj.get(arg.cdr, scope)
+
+def set(arg, scope):
+    assert type(arg) is Pair
+    obj = eval_node(arg.car, scope)
+    return obj.set(arg.cdr, scope)
 
 # TODO: it might be nice to allow keyword args that attached metadata to a function. maybe?
 def fn(declaration, outer_scope):
@@ -146,7 +148,8 @@ def pattern(arg, scope):
         return IdentifierPattern(arg, scope)
 
     if type(arg) is FormNode:
-        car = eval_node(arg.car, scope)
+        car = eval_node(arg.car, scope) # TODO: add tests that verify this is not evaluated more than once
+        arg = FormNode(ValueNode('CACHE', car), arg.cdr)
         if car is cons:
             return ConsPattern(arg.cdr, scope)
         elif car is list_:
@@ -179,32 +182,20 @@ def object(arg, scope):
         slot = arg.car
 
         if type(slot) is FormNode:
-            if type(slot.car) is not ValueNode:
-                raise Exception("Evaluation may have side-effects, so I won't do it")
-            func = eval_node(slot.car, None)
+            func = eval_node(slot.car, scope)
+            slot = FormNode(ValueNode('CACHE', func), slot.cdr) # this ensures we only eval the car of the form once
             if func is cons:
                 assert type(slot.cdr) is Pair
-                assert type(slot.cdr.car) is IdentifierNode
-                assert eval_node(slot.cdr.cdr.cdr, scope) is nil
-                key = slot.cdr.car.identifier
-                assert type(slot.cdr.cdr) is Pair
-                value = eval_node(slot.cdr.cdr.car, scope)
-                obj.set(key, value)
+                obj.set(slot.cdr, scope)
             elif func is get:
                 assert type(slot.cdr) is Pair
                 assert type(slot.cdr.cdr) is Pair
-                assert eval_node(slot.cdr.cdr.cdr, scope) is nil
-                assert type(slot.cdr.cdr.car) is IdentifierNode # TODO: this could technically be relaxed at some point. Maybe.
-                key = slot.cdr.cdr.car.identifier
-                value = eval_node(slot, scope)
-                obj.set(key, value)
+                key_node = slot.cdr.cdr.car
+                obj.set(Pair(key_node, Pair(slot, nil)), scope)
             else:
                 raise Exception("I don't know what to do with that yet")
-
         elif type(slot) is IdentifierNode:
-            key = slot.identifier
-            value = eval_node(slot, scope)
-            obj.set(key, value)
+            obj.set(Pair(slot, Pair(slot, nil)), scope)
         else:
             raise Exception("syntax error!")
 

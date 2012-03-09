@@ -590,10 +590,19 @@ class Tests(unittest.TestCase):
 
     def test_objects_basic(self):
         self.assertEqual(10, isheval('(get (object foo:10) foo)'))
+    def test_objects_set(self):
+        self.assertEqual(10, isheval('(obj = {}) (set obj foo 10) (get obj foo)'))
     def test_objects_special_syntax(self):
         self.assertEqual(10, isheval('(get {foo: 10} foo)'))
     def test_objects_get_syntax(self):
         self.assertEqual(10, isheval('{foo: 10}.foo'))
+    def test_get_in_object_is_evaluated_once(self):
+        self.assertEqual(1, isheval('''
+            (a = 0)
+            (obj = {baz: 10})
+            (side-effect-get = (fn - (a = (add a 1)) get))
+            { ((side-effect-get) obj baz) }
+            a'''))
     def test_objects_identifier_shorthand(self):
         self.assertEqual(10, isheval('''
             (foo = 10)

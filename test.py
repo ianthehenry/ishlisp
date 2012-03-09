@@ -579,6 +579,13 @@ class Tests(unittest.TestCase):
         self.assertEqual(10, isheval('((pattern [foo (add 3 2)]) [10 5]) foo'))
         self.assertRaises(Exception, isheval, '((pattern (add 3 2)) 6)')
 
+    # callable tests
+
+    def test_pairs_are_callable(self):
+        self.assertEqual(2, isheval('(car:cdr [1 2 3])'))
+    def test_pairs_are_callable_with_user_defined_functions(self):
+        self.assertEqual(3, isheval('(inc = (fn [a] (add a 1))) (inc:car:cdr [1 2 3])'))
+
     # object tests
 
     def test_objects_basic(self):

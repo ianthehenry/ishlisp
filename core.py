@@ -9,10 +9,18 @@ class Nil:
         return self is other
 nil = Nil()
 
+def _call(obj, arg, invoking_scope):
+    if type(obj) is FunctionType:
+        return obj(arg, invoking_scope)
+    else:
+        return obj.call(arg, invoking_scope)
+
 class Pair:
     def __init__(self, car, cdr):
         self.car = car
         self.cdr = cdr
+    def call(self, arg, invoking_scope):
+        return _call(self.car, Pair(_call(self.cdr, arg, invoking_scope), nil), invoking_scope)
     def __eq__(self, other):
         return type(other) is Pair and self.car == other.car and self.cdr == other.cdr
     def __repr__(self):
@@ -49,3 +57,4 @@ class Object:
         return '{ %s }' % ', '.join(['%s: %s' % (key, repr(value)) for key, value in self.dict.items()])
 
 from reader import IdentifierNode
+from types import FunctionType

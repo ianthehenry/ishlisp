@@ -581,12 +581,21 @@ class Tests(unittest.TestCase):
 
     # object tests
 
-    def test_objects(self):
-        self.assertEqual(Pair(40, 10), isheval('''
-            (baz = 10)
-            (obj = {foo: {bar: 40}, baz})
-            (obj2 = {obj.foo.bar})
-            obj2.bar:obj.baz
+    def test_objects_basic(self):
+        self.assertEqual(10, isheval('(get (object foo:10) foo)'))
+    def test_objects_special_syntax(self):
+        self.assertEqual(10, isheval('(get {foo: 10} foo)'))
+    def test_objects_get_syntax(self):
+        self.assertEqual(10, isheval('{foo: 10}.foo'))
+    def test_objects_identifier_shorthand(self):
+        self.assertEqual(10, isheval('''
+            (foo = 10)
+            (get {foo} foo)
+            '''))
+    def test_objects_get_shorthand(self):
+        self.assertEqual(10, isheval('''
+            (obj = {foo: {bar: 10}})
+            (get {obj.foo.bar} bar)
             '''))
 
 unittest.main()

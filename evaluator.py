@@ -106,6 +106,7 @@ root = Scope({
     'curry': specials.curry,
     'even?': specials.even,
     'odd?': specials.odd,
+    'object': specials.object,
     'nil': nil
 }, None)
 

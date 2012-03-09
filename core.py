@@ -48,7 +48,11 @@ class Object:
         assert eval_node(arg.cdr, scope) is nil
         key_node = arg.car
         assert type(key_node) is IdentifierNode # TODO: maybe allow something else
-        return self.dict[key_node.identifier]
+        result = self.dict[key_node.identifier]
+        if type(result) is Method:
+            return BoundMethod(result, self)
+        else:
+            return result
     def set(self, arg, scope):
         assert type(arg) is Pair
         assert type(arg.cdr) is Pair
@@ -93,4 +97,4 @@ class Dictionary(Object):
 
 from reader import Node, IdentifierNode
 from types import FunctionType
-from evaluator import eval_node
+from evaluator import eval_node, Method, BoundMethod

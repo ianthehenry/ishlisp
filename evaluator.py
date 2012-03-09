@@ -69,16 +69,9 @@ class Method(Function):
         raise Exception("an unbound method cannot be invoked")
 
 class BoundMethod:
-    def __init__(self, arg, scope):
-        assert type(arg) is Pair
-        assert type(arg.cdr) is Pair
-        assert eval_node(arg.cdr.cdr, scope) is nil
-
-        self.method = eval_node(arg.car, scope)
-        if type(self.method) is BoundMethod:
-            raise Exception("you cannot rebind a method...yet")
-        assert type(self.method) is Method
-        self.obj = eval_node(arg.cdr.car, scope)
+    def __init__(self, method, obj):
+        self.method = method
+        self.obj = obj
     def __repr__(self):
         return "(BoundMethod %s %s)" % (repr(self.method), repr(self.obj))
     def call(self, arg, invoking_scope):

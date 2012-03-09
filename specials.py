@@ -206,7 +206,17 @@ def object(arg, scope):
     return obj
 
 def bind(arg, scope):
-    return BoundMethod(arg, scope)
+    assert type(arg) is Pair
+    assert type(arg.cdr) is Pair
+    assert eval_node(arg.cdr.cdr, scope) is nil
+
+    method = eval_node(arg.car, scope)
+    if type(method) is BoundMethod:
+        raise Exception("you cannot rebind a method...yet")
+    assert type(method) is Method
+    obj = eval_node(arg.cdr.car, scope)
+
+    return BoundMethod(method, obj)
 
 def dictionary(arg, scope):
     dct = Dictionary()

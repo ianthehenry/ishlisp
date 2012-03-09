@@ -646,6 +646,10 @@ class Tests(unittest.TestCase):
             (meth = (md [a] (add a @bar)))
             (foo = {bar: 10})
             ((bind meth foo) 5)'''))
+    def test_get_binds_methods(self):
+        self.assertEqual(15, isheval('''
+            (obj = { baz: 5, meth: (md [a] (add a @baz)) })
+            (obj.meth 10)'''))
     def test_cant_invoke_unbound_method(self):
         self.assertRaises(Exception, isheval, '((md - 10) 5)')
 

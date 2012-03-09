@@ -64,6 +64,33 @@ class Object:
             return '{}'
         return '{ %s }' % ', '.join(['%s: %s' % (key, repr(value)) for key, value in self.dict.items()])
 
+class Dictionary(Object):
+    def __init__(self):
+        super().__init__()
+        self.data = {}
+    def get(self, arg, scope):
+        assert type(arg) is Pair
+        key_node = arg.car
+        if type(key_node) is IdentifierNode:
+            super().get(arg, scope)
+
+        assert eval_node(arg.cdr, scope) is nil
+        return self.data[eval_node(key_node, scope)]
+    def set(self, arg, scope):
+        assert type(arg) is Pair
+        key_node = arg.car
+        if type(key_node) is IdentifierNode:
+            super().set(arg, scope)
+        assert type(arg.cdr) is Pair
+        assert eval_node(arg.cdr.cdr, scope) is nil
+        self.data[eval_node(key_node, scope)] = eval_node(arg.cdr.car, scope)
+    def __eq__(self, other):
+        return self is other
+    def __repr__(self):
+        if len(self.data) == 0:
+            return '#{}'
+        return '#{ %s }' % ', '.join(['%s: %s' % (repr(key), repr(value)) for key, value in self.data.items()])
+
 from reader import Node, IdentifierNode
 from types import FunctionType
 from evaluator import eval_node

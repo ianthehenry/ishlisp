@@ -591,7 +591,7 @@ class Tests(unittest.TestCase):
     def test_objects_basic(self):
         self.assertEqual(10, isheval('(get (object foo:10) foo)'))
     def test_objects_set(self):
-        self.assertEqual(10, isheval('(obj = {}) (set obj foo 10) (get obj foo)'))
+        self.assertEqual(10, isheval('(obj = (object)) (set obj foo 10) (get obj foo)'))
     def test_objects_special_syntax(self):
         self.assertEqual(10, isheval('(get {foo: 10} foo)'))
     def test_objects_get_syntax(self):
@@ -613,5 +613,27 @@ class Tests(unittest.TestCase):
             (obj = {foo: {bar: 10}})
             (get {obj.foo.bar} bar)
             '''))
+
+    # dictionary tests
+
+    def test_dictionaries_basic(self):
+        self.assertEqual(10, isheval('(get (dictionary 5:10) 5)'))
+    def test_dictionaries_set(self):
+        self.assertEqual(10, isheval('(dict = (dictionary)) (set dict 5 10) (get dict 5)'))
+    def test_dictionaries_special_syntax(self):
+        self.assertEqual(10, isheval('(get #{5: 10} 5)'))
+    def test_dictionaries_get_syntax(self):
+        self.assertEqual(10, isheval('#{5: 10}.5'))
+    def test_dictionaries_dont_treat_identifiers_specially(self):
+        self.assertEqual(10, isheval('''
+            (foo = 5)
+            #{foo: 10}.5'''))
+    def test_dictionaries_can_still_have_attributes(self):
+        self.assertEqual(Pair(10, Pair(20, 30)), isheval('''
+            (dict = (dictionary))
+            (set dict 5 10)
+            (set dict foo 20)
+            (set dict #foo 30)
+            dict.5 : dict.foo : dict.#foo'''))
 
 unittest.main()

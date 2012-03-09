@@ -1,5 +1,5 @@
-from core import Pair, nil
-from reader import read, FormNode, IdentifierNode, NumericLiteralNode, ValueNode, Node
+from core import Pair, nil, Symbol
+from reader import read, FormNode, IdentifierNode, NumericLiteralNode, ValueNode, Node, SymbolLiteralNode
 from types import FunctionType
 import specials
 
@@ -69,6 +69,7 @@ def eval_node(node, scope):
 
     # we're re-evaluating something that's already been evaluated. this might be a terrible idea.
     # currently used by the apply and curry builtins to pre-apply arguments before calling a built-in function
+    # should just use ValueNodes in all cases
     if not isinstance(node, Node):
         return node
 
@@ -81,7 +82,9 @@ def eval_node(node, scope):
     elif type(node) is IdentifierNode:
         return scope.get(node.identifier)
     elif type(node) is NumericLiteralNode:
-        return node.num
+        return int(node.value)
+    elif type(node) is SymbolLiteralNode:
+        return Symbol(node.value)
     elif type(node) is ValueNode:
         return node.value
     else:
@@ -108,6 +111,7 @@ root = Scope({
     'even?': specials.even,
     'odd?': specials.odd,
     'object': specials.object,
+    'dictionary': specials.dictionary,
     'nil': nil
 }, None)
 

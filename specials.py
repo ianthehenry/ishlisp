@@ -203,7 +203,18 @@ def object(arg, scope):
 
     return obj
 
-from core import Pair, Object, nil, Symbol
+def dictionary(arg, scope):
+    dct = Dictionary()
+
+    while arg is not nil:
+        assert type(arg) is Pair
+        pair = eval_node(arg.car, scope)
+        dct.set(Pair(ValueNode('CACHE', pair.car), Pair(ValueNode('CACHE', pair.cdr), nil)), scope)
+        arg = arg.cdr
+
+    return dct
+
+from core import Pair, Object, nil, Symbol, Dictionary
 from reader import FormNode, IdentifierNode, ValueNode
 from evaluator import eval_node, Scope, Function
 from patterns import *

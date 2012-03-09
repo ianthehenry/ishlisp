@@ -105,13 +105,13 @@ class SymbolLiteralNode(Node):
 class NumericLiteralNode(Node):
     def __init__(self, token):
         assert type(token) is str
-        self.num = int(token)
+        self.value = token
     def __repr__(self):
-        return repr(self.num)
+        return str(self.value)
     def __str__(self):
-        return "(NumericLiteralNode '%s')" % repr(self.num)
+        return "(NumericLiteralNode %s)" % self.value
     def __eq__(self, other):
-        return type(other) is NumericLiteralNode and self.num == other.num
+        return type(other) is NumericLiteralNode and self.value == other.value
 
 def lookahead(indexable):
     i = 0
@@ -201,7 +201,10 @@ MATCHED_TOKENS = {
         lambda: ValueNode('_nil', nil)), # TODO: this should be the void function
     '{': ('}',
         lambda *sexp: FormNode(ValueNode('_object', specials.object), parse_forms(sexp, False)),
-        lambda: FormNode(ValueNode('_object', specials.object), nil))
+        lambda: FormNode(ValueNode('_object', specials.object), nil)),
+    '#{': ('}',
+        lambda *sexp: FormNode(ValueNode('_dictionary', specials.dictionary), parse_forms(sexp, False)),
+        lambda: FormNode(ValueNode('_dictionary', specials.dictionary), nil)),
 }
 
 def reverse_iterator(items):

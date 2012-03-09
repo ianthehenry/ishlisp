@@ -43,12 +43,20 @@ class Object:
     def __init__(self):
         self.dict = {}
         self.proto = None
+    def get_slot(self, slot):
+        assert type(slot) is str
+        if slot in self.dict:
+            return self.dict[slot]
+        elif self.proto is None:
+            raise Exception("could not access slot %s" % slot)
+        else:
+            return self.proto.get_slot(slot)
     def get(self, arg, scope):
         assert type(arg) is Pair
         assert eval_node(arg.cdr, scope) is nil
         key_node = arg.car
         assert type(key_node) is IdentifierNode # TODO: maybe allow something else
-        result = self.dict[key_node.identifier]
+        result = self.get_slot(key_node.identifier)
         if type(result) is Method:
             return BoundMethod(result, self)
         else:

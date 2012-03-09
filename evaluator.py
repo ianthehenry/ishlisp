@@ -111,6 +111,7 @@ root = Scope({
     'list': specials.list_,
     'cons': specials.cons,
     'get': specials.get,
+    'get-slot': specials.get_slot,
     'set': specials.set,
     'car': specials.car,
     'cdr': specials.cdr,

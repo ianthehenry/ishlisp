@@ -173,6 +173,15 @@ def array(arg, scope):
 def slash(arg, scope):
     raise Exception("not yet implemented")
 
+def get_slot(arg, scope):
+    assert type(arg) is Pair
+    assert type(arg.cdr) is Pair
+    assert eval_node(arg.cdr.cdr, scope) is nil
+    obj = eval_node(arg.car, scope)
+    key = eval_node(arg.cdr.car, scope)
+    assert type(key) is Symbol
+    return obj.get_slot(key.value)
+
 def function_shorthand(arg, scope):
     return Function(Pair(ValueNode('_default_pattern', default_arguments_pattern_singleton), Pair(FormNode(arg.car, arg.cdr), nil)), scope)
 

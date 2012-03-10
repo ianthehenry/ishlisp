@@ -44,7 +44,7 @@ def parse_forms(lst, is_form_node = True):
         assert lst is nil or isinstance(lst, Node)
         return lst
     if len(lst) == 0:
-        return nil
+        return nil # TODO: if is_form_node, return void
 
     if lst[0] == PAIR_CDR_TOKEN: # [| b]
         raise Exception("cannot have a cdr without a car")
@@ -124,7 +124,7 @@ def lex(code): # converts string to tokens, currently represented as simple stri
         BINARY_OPERATORS.keys() | \
         UNARY_OPERATORS.keys() | \
         MATCHED_TOKENS.keys() | \
-        set([end for end, _, _ in MATCHED_TOKENS.values()])
+        set([end for end, _ in MATCHED_TOKENS.values()])
     tokens = []
     def end_token(char_list):
         token = ''.join(char_list)
@@ -150,7 +150,7 @@ def lex(code): # converts string to tokens, currently represented as simple stri
     end_token(current_token)
     return tokens
 
-def read_matched_code(tokens, end, constructor, empty_constructor):
+def read_matched_code(tokens, end, constructor):
     increasers = set([key for key in MATCHED_TOKENS if MATCHED_TOKENS[key][0] == end])
     nesting_depth = 1
     def pred(token):
@@ -167,13 +167,11 @@ def read_matched_code(tokens, end, constructor, empty_constructor):
         raise Exception("Unbalanced tokens")
 
     if len(form_tokens) == 0:
-        return (empty_constructor(), 1)
+        return (constructor(), 1)
 
     return (constructor(*parse_and_expand(form_tokens)), len(form_tokens) + 1) # +1 to account for the closing paren/bracket/whatever
 
 def parse_single_token(token):
-    assert token not in MATCHED_TOKENS
-
     if re.match(r'^\d+$', token):
         return NumericLiteralNode(token)
     if token == PAIR_CDR_TOKEN:
@@ -189,22 +187,12 @@ def parse_single_token(token):
 
 # TODO: get rid of the whole "empty constructor" nonsense
 MATCHED_TOKENS = {
-    '(': (')', lambda *sexp: parse_forms(sexp), lambda: ValueNode('_nil', nil)), # this should actually throw an exception, but i'm allowing it for now...makes sense if nil can be used as a function
-    '[': (']',
-        lambda *sexp: FormNode(ValueNode('_list', specials.list_), parse_forms(sexp, False)),
-        lambda: ValueNode('_nil', nil)),
-    '#[': (']',
-        lambda *sexp: FormNode(ValueNode('_array', specials.array), parse_forms(sexp, False)),
-        lambda: FormNode(ValueNode('_array', specials.array), nil)),
-    '#(': (')',
-        lambda *sexp: FormNode(ValueNode('_sfn', specials.function_shorthand), parse_forms(sexp, False)),
-        lambda: ValueNode('_nil', nil)), # TODO: this should be the void function
-    '{': ('}',
-        lambda *sexp: FormNode(ValueNode('_object', specials.object), parse_forms(sexp, False)),
-        lambda: FormNode(ValueNode('_object', specials.object), nil)),
-    '#{': ('}',
-        lambda *sexp: FormNode(ValueNode('_dictionary', specials.dictionary), parse_forms(sexp, False)),
-        lambda: FormNode(ValueNode('_dictionary', specials.dictionary), nil)),
+    '(': (')',  lambda *sexp: parse_forms(sexp)),
+    '[': (']',  lambda *sexp: FormNode(ValueNode('_list', specials.list_), parse_forms(sexp, False))),
+    '#[': (']', lambda *sexp: FormNode(ValueNode('_array', specials.array), parse_forms(sexp, False))),
+    '#(': (')', lambda *sexp: FormNode(ValueNode('_sfn', specials.function_shorthand), parse_forms(sexp, False))),
+    '{': ('}',  lambda *sexp: FormNode(ValueNode('_object', specials.object), parse_forms(sexp, False))),
+    '#{': ('}', lambda *sexp: FormNode(ValueNode('_dictionary', specials.dictionary), parse_forms(sexp, False))),
 }
 
 def reverse_iterator(items):

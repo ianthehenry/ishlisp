@@ -49,7 +49,7 @@ class Tests(unittest.TestCase):
     # repr tests
 
     def test_list_repr_empty_lists_are_nil(self):
-        self.assertEqual('_nil', repr(read_one('[]')))
+        self.assertEqual('(_list)', repr(read_one('[]')))
     def test_form_node_repr(self):
         self._repr_is_homoiconic('(a)')
         self._repr_is_homoiconic('(a | b)')

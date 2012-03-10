@@ -155,7 +155,11 @@ def pattern(arg, scope):
         if car is cons:
             return ConsPattern(arg.cdr, scope)
         elif car is list_:
-            return ConsPattern(arg.cdr, scope, True)
+            # there might be a more elegant way to do this. perhaps.
+            if arg.cdr is nil:
+                return ValuePattern(arg.cdr)
+            else:
+                return ConsPattern(arg.cdr, scope, True)
         elif car is slash:
             return _get_aliased_pattern(arg.cdr, scope)
         elif car is pattern_with_predicate:
@@ -183,6 +187,9 @@ def get_slot(arg, scope):
     return obj.get_slot(key.value)
 
 def function_shorthand(arg, scope):
+    if arg is nil:
+        return Function(Pair(ValueNode('_default_pattern', default_arguments_pattern_singleton), nil), scope)
+    assert type(arg) is Pair
     return Function(Pair(ValueNode('_default_pattern', default_arguments_pattern_singleton), Pair(FormNode(arg.car, arg.cdr), nil)), scope)
 
 def object(arg, scope):

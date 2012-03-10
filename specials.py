@@ -22,6 +22,42 @@ def even(arg, scope):
 def odd(arg, scope):
     return not even(arg, scope)
 
+def def_(arg, scope):
+    assert type(arg) is Pair
+    assert type(arg.cdr) is Pair
+    assert eval_node(arg.cdr.cdr, scope) is nil
+    assert type(arg.car) is IdentifierNode
+    value = eval_node(arg.cdr.car, scope)
+    scope.set(arg.car.identifier, value)
+    return value
+
+def redef(arg, scope):
+    assert type(arg) is Pair
+    assert type(arg.cdr) is Pair
+    assert eval_node(arg.cdr.cdr, scope) is nil
+    assert type(arg.car) is IdentifierNode
+    value = eval_node(arg.cdr.car, scope)
+    scope.set_recursive(arg.car.identifier, value)
+    return value
+
+def if_(arg, scope):
+    assert type(arg) is Pair
+    assert type(arg.cdr) is Pair
+    assert type(arg.cdr.cdr) is Pair
+    assert eval_node(arg.cdr.cdr.cdr, scope) is nil
+
+    predicate_value = eval_node(arg.car, scope)
+    then_node = arg.cdr.car
+    else_node = arg.cdr.cdr.car
+
+    # TODO: should perform boolean coercion here
+    if predicate_value is True:
+        return eval_node(then_node, scope)
+    elif predicate_value is False:
+        return eval_node(else_node, scope)
+    else:
+        raise Exception("I can't perform boolean coercion yet")
+
 def id(arg, scope):
     assert type(arg) is Pair
     assert eval_node(arg.cdr, scope) is nil

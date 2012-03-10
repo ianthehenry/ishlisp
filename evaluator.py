@@ -131,6 +131,11 @@ root = Scope({
     'odd?': specials.odd,
     'object': specials.object,
     'dictionary': specials.dictionary,
+    'def': specials.def_,
+    'redef': specials.redef,
+    'true': True,
+    'false': False,
+    'if': specials.if_,
     'nil': nil
 }, None)
 

@@ -1,6 +1,7 @@
 import unittest
-from reader import lex, read, parse_forms, FormNode, BINARY_OPERATORS, UNARY_OPERATORS, PAIR_CDR_TOKEN, NumericLiteralNode, IdentifierNode, nil, expand_binary_operators, expand_unary_operators, ValueNode
-from evaluator import isheval, Pair, root, Scope, Function
+from core import nil, void, Pair
+from reader import lex, read, parse_forms, FormNode, BINARY_OPERATORS, UNARY_OPERATORS, PAIR_CDR_TOKEN, NumericLiteralNode, IdentifierNode, expand_binary_operators, expand_unary_operators, ValueNode
+from evaluator import isheval, root, Scope, Function
 from types import LambdaType, FunctionType
 import specials
 
@@ -57,7 +58,6 @@ class Tests(unittest.TestCase):
         self._repr_is_homoiconic('(a b 3)')
         self._repr_is_homoiconic('(a (b))')
         self._repr_is_homoiconic('(a | (b))')
-        # self.assertRaises(Exception, read, '()') # TODO
         self.assertRaises(Exception, read, '(|)')
         self.assertRaises(Exception, read, '(a |)')
         self.assertRaises(Exception, read, '(| a)')
@@ -69,6 +69,8 @@ class Tests(unittest.TestCase):
         self.assertEqual(11, isheval('(add 5 6)'))
         self.assertEqual(8, isheval('(add 5 (add 1 2))'))
         self.assertEqual(18, isheval('(add (add 5 10) (add 1 2))'))
+    def test_eval_void(self):
+        self.assertEqual(void, isheval('()'))
     def test_eval_builtin_id(self):
         self.assertEqual(2, isheval('(id 2)'))
         self.assertEqual(5, isheval('(id (add 2 3))'))
@@ -101,11 +103,11 @@ class Tests(unittest.TestCase):
         self.assertEqual(Pair(5, nil), isheval('((fn x x) (add 2 3))'))
         self.assertEqual(30, isheval('((fn x (add 10 (car x))) 20)'))
         self.assertRaises(Exception, isheval, '((add 1 2))')
-    def test_empty_functions_return_nil(self): # should return void later
-        self.assertEqual(nil, isheval('((fn x))'))
+    def test_empty_functions_return_void(self):
+        self.assertEqual(void, isheval('((fn x))'))
     def test_functions_bind_hyphen(self):
         self.assertEqual(12, isheval('((fn [x] (add 3 4) (add x -)) 5)'))
-        self.assertEqual(nil, isheval('((fn [x] -) 5)')) # TODO: should eventually be void
+        self.assertEqual(void, isheval('((fn [x] -) 5)'))
     def test_eval_functions_in_scope(self):
         my_id = isheval('(fn x x)')
         scope = Scope({'my_id': my_id}, root)
@@ -154,7 +156,7 @@ class Tests(unittest.TestCase):
     def test_function_shorthand(self):
         self.assertEqual(25, isheval('(#(add - 20) 5)'))
         self.assertEqual(15, isheval('(#(add -1 -2) 5 10)'))
-        self.assertEqual(nil, isheval('(#(id -))')) # TODO: should eventually be void
+        self.assertEqual(void, isheval('(#(id -))'))
         self.assertRaises(Exception, isheval, '(#(add -1 -2) 5)')
     def test_eval_builtins(self):
         self.assertEqual(1, isheval('(car [1])'))

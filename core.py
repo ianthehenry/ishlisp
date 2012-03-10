@@ -8,6 +8,7 @@ class Nil:
     def __eq__(self, other):
         return self is other
 nil = Nil()
+void = None
 
 def _call(obj, arg, invoking_scope):
     if type(obj) is FunctionType:
@@ -42,12 +43,12 @@ class Symbol:
 class Object:
     def __init__(self):
         self.dict = {}
-        self.proto = None
+        self.proto = void
     def get_slot(self, slot):
         assert type(slot) is str
         if slot in self.dict:
             return self.dict[slot]
-        elif self.proto is None:
+        elif self.proto is void:
             raise Exception("could not access slot %s" % slot)
         else:
             return self.proto.get_slot(slot)

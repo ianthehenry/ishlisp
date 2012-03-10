@@ -44,7 +44,7 @@ def parse_forms(lst, is_form_node = True):
         assert lst is nil or isinstance(lst, Node)
         return lst
     if len(lst) == 0:
-        return nil # TODO: if is_form_node, return void
+        return void if is_form_node else nil
 
     if lst[0] == PAIR_CDR_TOKEN: # [| b]
         raise Exception("cannot have a cdr without a car")
@@ -287,7 +287,7 @@ def read(code):
 
 import specials
 import re
-from core import Pair, nil
+from core import Pair, nil, void
 from itertools import takewhile
 
 BINARY_OPERATORS = {

@@ -1,4 +1,4 @@
-from core import Pair, nil, Symbol
+from core import Pair, nil, Symbol, void
 from reader import read, FormNode, IdentifierNode, NumericLiteralNode, ValueNode, Node, SymbolLiteralNode
 from types import FunctionType
 import specials
@@ -10,7 +10,7 @@ class Scope:
     def get(self, identifier):
         if identifier in self.dict:
             return self.dict[identifier]
-        if self.parent is None:
+        if self.parent is void:
             raise Exception("identifier '%s' is not in scope" % identifier)
         return self.parent.get(identifier)
     def set(self, identifier, value):
@@ -23,7 +23,7 @@ class Scope:
         if self.has(identifier):
             self.set(identifier, value)
             return True
-        elif self.parent is None:
+        elif self.parent is void:
             if top:
                 self.set(identifier, value)
                 return True
@@ -52,7 +52,7 @@ class Function:
         evaled_arg = eval_node(arg, invoking_scope)
         if not self.pattern.match(evaled_arg, new_scope):
             raise Exception("pattern did not match. pattern: '%s' actual: '%s'" % (self.pattern.nice_repr(), repr(evaled_arg)))
-        val = nil # TODO: should be void
+        val = void
         if not new_scope.has('-'):
             new_scope.set('-', val)
         forms = self.forms
@@ -136,8 +136,9 @@ root = Scope({
     'true': True,
     'false': False,
     'if': specials.if_,
+    'void': void,
     'nil': nil
-}, None)
+}, void)
 
 def isheval(code, scope = root):
     ret_value = nil

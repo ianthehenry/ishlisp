@@ -28,6 +28,23 @@ class Pair:
         return '(Pair %s %s)' % (repr(self.car), repr(self.cdr))
     def __str__(self):
         return "(Pair %s %s)" % (str(self.car), str(self.cdr))
+    def get(self, arg, scope):
+        assert type(arg) is Pair
+        assert eval_node(arg.cdr, scope) is nil
+        key_node = arg.car
+        assert type(key_node) is IdentifierNode
+        identifier = key_node.identifier
+        if identifier == 'car':
+            return self.car
+        elif identifier == 'cdr-slot':
+            return self.cdr
+        elif identifier == 'cdr':
+            if type(self.cdr) is Promise:
+                return self.cdr.get_value()
+            else:
+                return self.cdr
+        else:
+            raise Exception("Pair has no property %s" % identifier)
 
 class Symbol:
     def __init__(self, value):
@@ -103,6 +120,19 @@ class Dictionary(Object):
         if len(self.data) == 0:
             return '#{}'
         return '#{ %s }' % ', '.join(['%s: %s' % (repr(key), repr(value)) for key, value in self.data.items()])
+
+class Promise:
+    def __init__(self, arg, scope):
+        assert type(arg) is Pair
+        assert eval_node(arg.cdr, scope) is nil
+        self.node = arg.car
+        self.scope = scope
+    def get_value(self):
+        if 'value' not in self.__dict__:
+            self.value = eval_node(self.node, self.scope)
+            del self.node
+            del self.scope
+        return self.value
 
 from reader import Node, IdentifierNode
 from types import FunctionType

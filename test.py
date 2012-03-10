@@ -641,7 +641,7 @@ class Tests(unittest.TestCase):
             (set dict #foo 30)
             dict.5 : dict.foo : dict.#foo'''))
 
-    # test method
+    # test methods
 
     def test_binding_methods(self):
         self.assertEqual(15, isheval('''
@@ -654,5 +654,39 @@ class Tests(unittest.TestCase):
             (obj.meth 10)'''))
     def test_cant_invoke_unbound_method(self):
         self.assertRaises(Exception, isheval, '((md - 10) 5)')
+
+    # test promises
+
+    def test_promises(self):
+        self.assertEqual(Pair(0, Pair(0, Pair(1, 1))), isheval('''
+            (x = 0)
+            (side-effect = (fn -
+                (x = (add x 1))
+                20))
+
+            (a = x)
+            (def y (delay (side-effect)))
+            (b = x)
+            (force y)
+            (c = x)
+            (force y)
+            (d = x)
+            a:b:c:d'''))
+    def test_pairs_force_cdrs(self):
+        self.assertEqual(Pair(0, Pair(0, Pair(1, 1))), isheval('''
+            (x = 0)
+            (side-effect = (fn -
+                (x = (add x 1))
+                20))
+
+            (a = x)
+            (pair = 10:(delay (side-effect)))
+            pair.cdr-slot
+            (b = x)
+            pair.cdr
+            (c = x)
+            (force pair.cdr-slot)
+            (d = x)
+            a:b:c:d'''))
 
 unittest.main()

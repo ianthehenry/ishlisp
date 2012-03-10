@@ -107,6 +107,9 @@ def eval_node(node, scope):
 root = Scope({
     'print': specials.print_,
     'add': specials.add,
+    'subtract': specials.subtract,
+    'delay': specials.delay,
+    'force': specials.force,
     'id': specials.id,
     'list': specials.list_,
     'cons': specials.cons,
@@ -136,6 +139,7 @@ root = Scope({
     'true': True,
     'false': False,
     'if': specials.if_,
+    'eq': specials.eq,
     'void': void,
     'nil': nil
 }, void)

@@ -5,7 +5,30 @@ def print_(arg, scope):
     return nil
 
 def add(arg, scope):
-    return eval_node(arg.car, scope) + eval_node(arg.cdr.car, scope)
+    assert type(arg) is Pair
+    assert type(arg.cdr) is Pair
+    assert eval_node(arg.cdr.cdr, scope) is nil
+    first = eval_node(arg.car, scope)
+    second = eval_node(arg.cdr.car, scope)
+    assert type(first) is int and type(second) is int
+    return first + second
+
+def subtract(arg, scope):
+    assert type(arg) is Pair
+    assert type(arg.cdr) is Pair
+    assert eval_node(arg.cdr.cdr, scope) is nil
+    first = eval_node(arg.car, scope)
+    second = eval_node(arg.cdr.car, scope)
+    assert type(first) is int and type(second) is int
+    return first - second
+
+def eq(arg, scope):
+    assert type(arg) is Pair
+    assert type(arg.cdr) is Pair
+    assert eval_node(arg.cdr.cdr, scope) is nil
+    first = eval_node(arg.car, scope)
+    second = eval_node(arg.cdr.car, scope)
+    return first == second
 
 def cons(arg, scope):
     car = arg.car
@@ -71,7 +94,8 @@ def car(arg, scope):
 def cdr(arg, scope):
     assert type(arg) is Pair
     assert eval_node(arg.cdr, scope) is nil
-    return eval_node(arg.car, scope).cdr
+    val = eval_node(arg.car, scope)
+    return val.get(Pair(IdentifierNode('cdr'), nil), scope)
 
 def call(arg, scope):
     assert type(arg) is Pair
@@ -281,7 +305,17 @@ def dictionary(arg, scope):
 
     return dct
 
-from core import Pair, Object, nil, Symbol, Dictionary
+def delay(arg, scope):
+    return Promise(arg, scope)
+
+def force(arg, scope):
+    assert type(arg) is Pair
+    assert eval_node(arg.cdr, scope) is nil
+    promise = eval_node(arg.car, scope)
+    assert type(promise) is Promise
+    return promise.get_value()
+
+from core import Pair, Object, nil, Symbol, Dictionary, Promise
 from reader import FormNode, IdentifierNode, ValueNode
 from evaluator import eval_node, Scope, Function, Method, BoundMethod
 from patterns import *

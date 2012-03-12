@@ -150,6 +150,9 @@ def set(arg, scope):
 def function(arg, outer_scope):
     return Function(arg, outer_scope)
 
+def multi_function(arg, outer_scope):
+    return MultiFunction(arg, outer_scope)
+
 def method(arg, outer_scope):
     return Method(arg, outer_scope)
 
@@ -317,7 +320,7 @@ def force(arg, scope):
 
 from core import Pair, Object, nil, Symbol, Dictionary, Promise
 from reader import FormNode, IdentifierNode, ValueNode
-from evaluator import eval_node, Scope, Function, Method, BoundMethod
+from evaluator import eval_node, Scope, Function, Method, BoundMethod, MultiFunction
 from patterns import *
 from types import FunctionType
 

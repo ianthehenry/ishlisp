@@ -689,4 +689,14 @@ class Tests(unittest.TestCase):
             (d = x)
             a:b:c:d'''))
 
+    # test multifunctions
+
+    def test_multi_functions(self):
+        self.assertEqual(Pair(11, 30), isheval('''
+        (def multi-test (mfn
+            ([a] (add a 1))
+            ([a b] (add a b))
+        ))
+        (multi-test 10):(multi-test 10 20)'''))
+
 unittest.main()

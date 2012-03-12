@@ -62,6 +62,29 @@ class Function:
             forms = forms.cdr
         return val
 
+class MultiFunction:
+    def __init__(self, arg, scope):
+        self.functions = []
+        while arg is not nil:
+            assert type(arg) is Pair
+            assert type(arg.car) is FormNode
+
+            func_arg = Pair(arg.car.car, arg.car.cdr)
+            function = Function(func_arg, scope)
+            self.functions.append(function)
+            # print(function)
+
+            arg = arg.cdr
+    def __repr__(self):
+        return '(mfn %s)' % ''.join(['(%s %s)' % (func.pattern.nice_repr(), repr(func.forms)) for func in self.functions])
+    def call(self, arg, invoking_scope):
+        for func in self.functions:
+            try:
+                return func.call(arg, invoking_scope)
+            except:
+                pass
+        raise Exception("No pattern matched")
+
 class Method(Function):
     def __repr__(self):
         return "(md %s %s)" % (self.pattern.nice_repr(), repr(self.forms))
@@ -120,6 +143,8 @@ root = Scope({
     'cdr': specials.cdr,
     'function': specials.function,
     'fn': specials.function,
+    'multi-function': specials.multi_function,
+    'mfn': specials.multi_function,
     'method': specials.method,
     'md': specials.method,
     'bind': specials.bind,

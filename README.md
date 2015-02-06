@@ -29,14 +29,14 @@ What would patterns be without "multifunctions"?
 
 Because it's a dynamic language, it seemed silly to do it any other way. The `pattern` special form can be used to parse patterns:
 
-    > my-pattern = (pattern [a::even? b/c])
+    > (def my-pattern (pattern [a::even? b/c]))
 
 Which can then be evaluated dynamically:
 
-    > match? my-pattern [1 2]
+    > (match? my-pattern [1 2])
     true
 
-I don't think I ever implemented dynamically extracting scope values from patterns, but it would be trivial to do that.
+I don't think I ever implemented dynamically extracting scope values from patterns, but it would be trivial to do that, due to the duality of environments and objects explained below.
 
 ## binary operators
 
@@ -50,7 +50,7 @@ Instead of this:
 
     (def a (cons 1 (cons 2 nil)))
 
-The goal was not to replace all prefix functions (all math operations are still prefix), but merely to support some nicer-looking constructs for key lookup and pattern matching. Also to use the word "shunt" more.
+The goal was not to replace all prefix functions (all math operations are still prefix, for example), but merely to support some nicer-looking constructs for key lookup and pattern matching. Also to use the word "shunt" more.
 
 The supported operators were:
 
@@ -80,7 +80,7 @@ There was a unary macro, `~`, that (basically) suppressed this behavior for a si
 
     foo = $ fn [x]
       ~something
-
+    
     (foo = (fn [x]
       something))
 
@@ -137,7 +137,7 @@ Or merely:
     > ((* 2):+ 4 1)
     10
 
-(Assuming `*` were curried, which it's probably not.)
+(Assuming `*` were a curried function.)
 
 The only other type in the standard library that's callable, apart from functions, are bound methods.
 
@@ -155,7 +155,7 @@ When a method body is executed, the scope begins with an identifier called `this
 
 There is a unary operator, `@foo`, that expands to `(get this #foo)`.
 
-## object story
+## the object story
 
 The object model is based on prototypal inheritance. On the surface it looks sort of similar to JavaScript, but properties and contexts are very different.
 
